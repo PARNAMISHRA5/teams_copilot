@@ -1,0 +1,17 @@
+{
+  "name": "teams-copilot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run start --prefix frontend",
+    "dev:backend": "npm run start --prefix backend",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && node proxy-server.js",
+    "install-all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

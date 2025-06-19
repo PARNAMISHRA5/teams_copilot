@@ -14,7 +14,7 @@ const SERVER_TIMEOUT = 120000; // 2 minutes
 
 // Enable CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'https://localhost:3000',
   credentials: true,
   optionsSuccessStatus: 200
 }));
@@ -419,13 +419,22 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log('🚀 Azure Llama API Proxy Server Starting...');
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 Main API: http://localhost:${PORT}/api/llama`);
-  console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
-  
+const https = require('https');
+const fs = require('fs');
+
+// HTTPS certificate and key
+const httpsOptions = {
+  key: fs.readFileSync('localhost-key.pem'),
+  cert: fs.readFileSync('localhost.pem'),
+};
+
+https.createServer(httpsOptions, app).listen(PORT, () => {
+  console.log('🚀 Azure Llama API Proxy Server (HTTPS) Starting...');
+  console.log(`🔒 Server running on https://localhost:${PORT}`);
+  console.log(`📋 Health check: https://localhost:${PORT}/health`);
+  console.log(`🔗 Main API: https://localhost:${PORT}/api/llama`);
+  console.log(`🧪 Test endpoint: https://localhost:${PORT}/api/test`);
+
   // Environment validation on startup
   console.log('\n🔧 Environment Check:');
   console.log('   NODE_ENV:', process.env.NODE_ENV || 'not set');
@@ -433,13 +442,13 @@ app.listen(PORT, () => {
   console.log('   API_TIMEOUT:', API_TIMEOUT, 'ms');
   console.log('   SERVER_TIMEOUT:', SERVER_TIMEOUT, 'ms');
   console.log('   FRONTEND_URL:', process.env.FRONTEND_URL || 'http://localhost:3000 (default)');
-  
+
   if (process.env.LLAMA_API_ENDPOINT) {
     console.log('   ✅ LLAMA_API_ENDPOINT:', process.env.LLAMA_API_ENDPOINT);
   } else {
     console.log('   ❌ LLAMA_API_ENDPOINT: NOT SET');
   }
-  
+
   if (process.env.LLAMA_API_KEY) {
     console.log('   ✅ LLAMA_API_KEY:', process.env.LLAMA_API_KEY.substring(0, 10) + '...');
   } else {
@@ -451,6 +460,6 @@ app.listen(PORT, () => {
   } else {
     console.log('   ⚠️  DEPLOY_NAME: NOT SET (optional)');
   }
-  
-  console.log('\n🎯 Azure Llama API Proxy Server ready!\n');
+
+  console.log('\n🎯 Azure Llama API Proxy Server ready on HTTPS!\n');
 });

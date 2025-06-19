@@ -7,21 +7,62 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# dotenv environment variables
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Node modules (recursive)
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.next-static/
+coverage/
+tmp/
+temp/
+.cache/
+.husky/_/
+
+# OS junk
 .DS_Store
+Thumbs.db
+
+# IDEs / Editor folders
+.vscode/
+!.vscode/extensions.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
-node_modules/
-.env
+
+# Misc
+*.local
+*.tgz
+*.pem
+*.key
+*.crt
+*.cert
+*.sqlite
+*.sqlite3
+
+# Mac M1 system file (for compatibility layers)
+*.dSYM
+
+# Optional: skip local Docker config or dbs
+docker-compose.override.yml
+*.db

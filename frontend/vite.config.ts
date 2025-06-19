@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -13,10 +12,7 @@ export default defineConfig({
     },
     port: 3000,
     proxy: {
-      '/api': 'https://localhost:3001' // if you want API calls to auto-forward to backend
+      '/api': 'https://localhost:3001',
     }
-  },
-  optimizeDeps: {
-    exclude: ['lucide-react'],
   },
 });

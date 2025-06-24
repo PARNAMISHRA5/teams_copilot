@@ -297,7 +297,7 @@ function App() {
 
   if (showLanding) {
     return (
-      <div className="min-h-screen max-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex overflow-hidden">
+      <div className="min-h-screen max-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex overflow-hidden font-aptos">
         <ChatSidebar
           chats={chats}
           currentChatId={currentChatId}
@@ -313,10 +313,10 @@ function App() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl mb-4">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 font-aptos">
               Teams Copilot
             </h1>
-            <p className="text-sm text-gray-600 mb-6">Your AI-powered assistant for Microsoft Teams</p>
+            <p className="text-sm text-gray-600 mb-6 font-aptos font-normal">Your AI-powered assistant for Microsoft Teams</p>
 
             <div className="relative">
               <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
@@ -328,7 +328,7 @@ function App() {
                     onKeyDown={handleKeyPress}
                     placeholder="Ask me anything..."
                     disabled={isGenerating}
-                    className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 bg-transparent"
+                    className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 bg-transparent font-aptos"
                     rows={1}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
@@ -339,7 +339,7 @@ function App() {
                   <button
                     onClick={isGenerating ? stopGeneration : sendMessage}
                     disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center w-7 h-7 text-white rounded-lg transition-all duration-200 flex-shrink-0 ${
+                    className={`flex items-center justify-center w-7 h-7 text-white rounded-lg transition-all duration-200 flex-shrink-0 font-aptos ${
                       isGenerating 
                         ? 'bg-red-600 hover:bg-red-700' 
                         : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -358,7 +358,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen max-h-screen bg-gray-50 flex overflow-hidden">
+    <div className="min-h-screen max-h-screen bg-gray-50 flex overflow-hidden font-aptos">
       <ChatSidebar
         chats={chats}
         currentChatId={currentChatId}
@@ -377,8 +377,8 @@ function App() {
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <MessageSquare className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="text-base font-semibold text-gray-700 mb-1">Start a conversation</h3>
-                <p className="text-sm text-gray-500">Ask me anything to get started</p>
+                <h3 className="text-base font-semibold text-gray-700 mb-1 font-aptos">Start a conversation</h3>
+                <p className="text-sm text-gray-500 font-aptos font-normal">Ask me anything to get started</p>
               </div>
             </div>
           ) : (
@@ -413,7 +413,7 @@ function App() {
                   onKeyDown={handleKeyPress}
                   placeholder="Ask me anything..."
                   disabled={isGenerating}
-                  className="flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 text-sm"
+                  className="flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 text-sm font-aptos"
                   rows={1}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
@@ -424,7 +424,7 @@ function App() {
                 <button
                   onClick={isGenerating ? stopGeneration : sendMessage}
                   disabled={!isGenerating && !input.trim()}
-                  className={`flex items-center justify-center w-8 h-8 text-white rounded-lg transition-all duration-200 flex-shrink-0 ${
+                  className={`flex items-center justify-center w-8 h-8 text-white rounded-lg transition-all duration-200 flex-shrink-0 font-aptos ${
                     isGenerating 
                       ? 'bg-red-600 hover:bg-red-700' 
                       : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -437,8 +437,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        
       </div>
     </div>
   );

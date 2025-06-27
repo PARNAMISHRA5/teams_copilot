@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
-import { Message } from '../types/chat';
 
-interface ChatMessageProps {
-  message: Message;
-  isGenerating?: boolean;
-}
-
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isGenerating }) => {
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+const ChatMessage = ({ message, isGenerating = false }) => {
+  const [copyStatus, setCopyStatus] = useState('idle');
   const isUser = message.role === 'user';
 
   const copyToClipboard = async () => {
@@ -40,7 +34,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isGenerating }) => {
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date) => {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -48,7 +42,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isGenerating }) => {
     }).format(date);
   };
 
-  const formatContent = (content: string) => {
+  const formatContent = (content) => {
     // Split content by lines and process each line
     const lines = content.split('\n');
     

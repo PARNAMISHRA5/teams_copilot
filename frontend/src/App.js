@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { SendHorizontal , Plus, MessageSquare, Sparkles, Home, Menu, X, Square } from 'lucide-react';
 import ChatSidebar from './components/ChatSidebar';
 import ChatMessage from './components/ChatMessage';
+import ReferencesPanel from './components/ReferencesPanel';
 
 const DeleteIcon = () => (
   <svg
@@ -23,6 +24,8 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isReferencesOpen, setIsReferencesOpen] = useState(false);
+  const [selectedMessageReferences, setSelectedMessageReferences] = useState(null);
   const [abortController, setAbortController] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -99,6 +102,23 @@ function App() {
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
+  const handleReferencesToggle = (messageId, references) => {
+    if (isReferencesOpen && selectedMessageReferences?.messageId === messageId) {
+      // Close if same message clicked
+      setIsReferencesOpen(false);
+      setSelectedMessageReferences(null);
+    } else {
+      // Open with new references
+      setSelectedMessageReferences({ messageId, references });
+      setIsReferencesOpen(true);
+    }
+  };
+
+  const closeReferences = () => {
+    setIsReferencesOpen(false);
+    setSelectedMessageReferences(null);
+  };
+
   const createNewChat = () => {
     const newChat = {
       id: Date.now().toString(),
@@ -173,6 +193,97 @@ function App() {
     }
   };
 
+  // Enhanced function to parse RAG response and extract images/references
+  const parseRAGResponse = (content) => {
+    const images = [];
+    const references = [];
+    
+    // Extract image references (format: aidn_000, aidn_001, etc.)
+    const imageRegex = /aidn_(\d{3})/g;
+    let imageMatch;
+    const foundImages = new Set(); // Prevent duplicates
+    
+    while ((imageMatch = imageRegex.exec(content)) !== null) {
+      const imageIndex = imageMatch[1];
+      if (!foundImages.has(imageIndex)) {
+        foundImages.add(imageIndex);
+        images.push({
+          index: imageIndex,
+          url: `/api/images/aidn_${imageIndex}.jpeg`,// This will be your actual image endpoint
+          alt: `Reference Image ${imageIndex}`,
+          placeholder: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNiOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlICR7aW1hZ2VJbmRleH08L3RleHQ+PC9zdmc+`
+        });
+      }
+    }
+
+    // Generate mock references based on content analysis
+    // In real implementation, these would come from your RAG pipeline
+    const contentLower = content.toLowerCase();
+    
+    if (contentLower.includes('api') || contentLower.includes('endpoint') || contentLower.includes('rest')) {
+      references.push({
+        id: 'ref-api-1',
+        title: 'REST APIs for OCM Functionality',
+        source: 'Technical Documentation',
+        url: '/docs/rest-apis-ocm-v4',
+        excerpt: 'Managing Integrity Validation Using RESTful API. The TM server application provides integrity validation functions...',
+        relevanceScore: 0.95,
+        type: 'documentation'
+      });
+    }
+
+    if (contentLower.includes('integrity') || contentLower.includes('validation') || contentLower.includes('sealing')) {
+      references.push({
+        id: 'ref-integrity-1',
+        title: 'Integrity Validation and Sealing Process',
+        source: 'System Administration Guide',
+        url: '/docs/integrity-validation',
+        excerpt: 'Sealing critical resources including managing snapshots, clean reference state, critical resources DB...',
+        relevanceScore: 0.88,
+        type: 'guide'
+      });
+    }
+
+    if (contentLower.includes('authentication') || contentLower.includes('security') || contentLower.includes('user')) {
+      references.push({
+        id: 'ref-auth-1',
+        title: 'HTTP Basic Authentication Implementation',
+        source: 'Security Documentation',
+        url: '/docs/authentication',
+        excerpt: 'RESTful endpoints TM product secured HTTP Basic Authentication leverage TM user management...',
+        relevanceScore: 0.82,
+        type: 'security'
+      });
+    }
+
+    if (contentLower.includes('json') || contentLower.includes('format') || contentLower.includes('response')) {
+      references.push({
+        id: 'ref-json-1',
+        title: 'API Response Format Specification',
+        source: 'API Reference',
+        url: '/docs/api-response-format',
+        excerpt: 'The API return data JSON format. The format requested based HTTP except header...',
+        relevanceScore: 0.75,
+        type: 'reference'
+      });
+    }
+
+    // Always add at least one reference for demo purposes
+    if (references.length === 0) {
+      references.push({
+        id: 'ref-general-1',
+        title: 'Teams Copilot Documentation',
+        source: 'User Guide',
+        url: '/docs/teams-copilot-guide',
+        excerpt: 'Comprehensive guide for using Teams Copilot and its various features...',
+        relevanceScore: 0.70,
+        type: 'guide'
+      });
+    }
+
+    return { images, references };
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isGenerating) return;
 
@@ -238,11 +349,23 @@ function App() {
       if (!response.ok) throw new Error((await response.json()).error || `HTTP ${response.status}`);
 
       const data = await response.json();
+      let aiContent = data.choices?.[0]?.message?.content || 'Sorry, I received an empty response.';
+      
+      // For demo purposes, add some image references to responses about APIs or technical topics
+      if (aiContent.toLowerCase().includes('api') || aiContent.toLowerCase().includes('rest') || aiContent.toLowerCase().includes('endpoint')) {
+        aiContent += '\n\nHere are some relevant diagrams: aidn_000 aidn_001';
+      }
+      
+      // Parse the response for images and references
+      const { images, references } = parseRAGResponse(aiContent);
+      
       const aiMessage = {
         id: (Date.now() + 1).toString(),
-        content: data.choices?.[0]?.message?.content || 'Sorry, I received an empty response.',
+        content: aiContent,
         role: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        images: images,
+        references: references
       };
 
       setChats(prev => prev.map(chat =>
@@ -252,12 +375,13 @@ function App() {
       ));
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        // Request was aborted, add a message indicating this
         const abortMessage = {
           id: (Date.now() + 1).toString(),
           content: 'Response generation was stopped.',
           role: 'assistant',
-          timestamp: new Date()
+          timestamp: new Date(),
+          images: [],
+          references: []
         };
         setChats(prev => prev.map(chat =>
           chat.id === chatId
@@ -269,7 +393,9 @@ function App() {
           id: (Date.now() + 1).toString(),
           content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}.`,
           role: 'assistant',
-          timestamp: new Date()
+          timestamp: new Date(),
+          images: [],
+          references: []
         };
         setChats(prev => prev.map(chat =>
           chat.id === chatId
@@ -368,7 +494,9 @@ function App() {
         onToggleCollapse={toggleSidebar}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300 ${
+        isReferencesOpen ? 'mr-80' : ''
+      }`}>
         <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
           {currentChat?.messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
@@ -383,7 +511,12 @@ function App() {
           ) : (
             <div className="space-y-4 max-w-3xl mx-auto">
               {currentChat?.messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+                <ChatMessage 
+                  key={message.id} 
+                  message={message} 
+                  onReferencesClick={handleReferencesToggle}
+                  isReferencesOpen={isReferencesOpen && selectedMessageReferences?.messageId === message.id}
+                />
               ))}
               {isGenerating && (
                 <ChatMessage
@@ -391,9 +524,12 @@ function App() {
                     id: 'generating',
                     content: '',
                     role: 'assistant',
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    images: [],
+                    references: []
                   }}
                   isGenerating={true}
+                  onReferencesClick={handleReferencesToggle}
                 />
               )}
               <div ref={messagesEndRef} />
@@ -436,9 +572,14 @@ function App() {
             </div>
           </div>
         </div>
-
-        
       </div>
+
+      {/* References Panel */}
+      <ReferencesPanel
+        isOpen={isReferencesOpen}
+        references={selectedMessageReferences?.references || []}
+        onClose={closeReferences}
+      />
     </div>
   );
 }

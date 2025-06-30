@@ -184,8 +184,40 @@ const ChatMessage = ({
                 </div>
               ) : (
                 <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
-                  {formatContent(message.content)}
+              {message.content === "__version_selection__" ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium mb-1">
+                    Please Select Version:
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "v4.2",
+                      "v4.1_Maintenance",
+                      "v4.1",
+                      "v4.0",
+                      "v4.0_Maintenance",
+                      "v3.4",
+                      "v3.4_Maintenance",
+                    ].map((ver) => (
+                      <button
+                        key={ver}
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("version-selected", { detail: ver })
+                          )
+                        }
+                        className="px-2 py-1 text-xs rounded bg-blue-100 hover:bg-blue-200 text-blue-800"
+                      >
+                        {ver}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              ) : (
+                formatContent(message.content)
+              )}
+            </div>
+                
               )}
             </div>
 

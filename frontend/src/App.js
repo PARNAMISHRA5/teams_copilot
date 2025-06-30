@@ -30,6 +30,24 @@ function App() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+    const [project_version, setProjectVersion] = useState("v4.2");
+  const [showDropdown, setShowDropdown] = useState(false);
+  //   const [selectedOption, setSelectedOption] = useState("View Prompts");
+  const options = [
+    {
+      heading: "Switch Version",
+      description: "Select the TM Documentation version",
+    },
+    {
+      heading: "New Session",
+      description: "Starts new session with AI-DN",
+    },
+  ];
+  const handleSelect = (option) => {
+    setInput(option); // ✅ insert into input
+    setShowDropdown(false); // ✅ close dropdown
+  };
+
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const showLanding = !currentChatId;
 
@@ -309,44 +327,121 @@ function App() {
       timestamp: new Date()
     };
 
-    setChats(prev => prev.map(chat =>
-      chat.id === chatId
-        ? {
-            ...chat,
-            messages: [...chat.messages, userMessage],
-            title: chat.messages.length === 0
-              ? input.trim().slice(0, 50) + (input.trim().length > 50 ? '...' : '')
-              : chat.title,
-            updatedAt: new Date()
-          }
-        : chat
-    ));
+    if (input.trim().toLowerCase() === "new session") {
+      // Trigger new chat
+      const newChat = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: [
+          {
+            id: (Date.now() + 1).toString(),
+            content: "New session started.",
+            role: "assistant",
+            timestamp: new Date(),
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    setInput('');
+      setChats((prev) => [newChat, ...prev]);
+      setCurrentChatId(newChat.id);
+      setInput("");
+      return;
+    }
+
+    if (input.trim().toLowerCase() === "switch version") {
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        content: "__version_selection__",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, userMessage, aiMessage],
+                updatedAt: new Date(),
+              }
+            : chat
+        )
+      );
+
+      setInput("");
+      return;
+    }
+
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              messages: [...chat.messages, userMessage],
+              title:
+                chat.messages.length === 0
+                  ? input.trim().slice(0, 50) +
+                    (input.trim().length > 50 ? "..." : "")
+                  : chat.title,
+              updatedAt: new Date(),
+            }
+          : chat
+      )
+    );
+
+    setInput("");
     setIsGenerating(true);
 
     // Create abort controller for this request
     const controller = new AbortController();
     setAbortController(controller);
+    console.log("ENV CHECK:", {
+      SELECTED_PROJECT: process.env.REACT_APP_SELECTED_PROJECT,
+      CLIENT: process.env.REACT_APP_CLIENT,
+      TRACE_ID: process.env.REACT_APP_TRACE_ID,
+    });
+
 
     try {
-      const currentChatMessages = chats.find(c => c.id === chatId)?.messages || [];
-      const response = await fetch('https://localhost:3001/api/llama', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...currentChatMessages, userMessage].map(msg => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          max_tokens: 2000,
-          temperature: 0.7,
-          top_p: 0.9
-        }),
-        signal: controller.signal
+      const currentChatMessages =
+        chats.find((c) => c.id === chatId)?.messages || [];
+
+      const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
+      const ENV_CLIENT = process.env.REACT_APP_CLIENT;
+      const TRACE_ID = process.env.REACT_APP_TRACE_ID;
+
+      const lastAssistantMessage = [...currentChatMessages]
+        .reverse()
+        .find((msg) => msg.role === "assistant");
+
+      const payload = {
+        message: input.trim(),
+        selected_project: ENV_PROJECT,
+        project_version: project_version,
+        user_details: {
+          user_id: "user123",
+          user_objectid: "objectid123",
+        },
+        client: ENV_CLIENT,
+        messages: lastAssistantMessage ? [lastAssistantMessage] : [],
+        trace_id: TRACE_ID,
+      };
+
+      console.log("🚀 Final Payload to Backend:", payload);
+
+      const response = await fetch("http://localhost:3001/api/llama", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error((await response.json()).error || `HTTP ${response.status}`);
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).error || `HTTP ${response.status}`
+        );
 
       const data = await response.json();
       let aiContent = data.choices?.[0]?.message?.content || 'Sorry, I received an empty response.';
@@ -408,6 +503,39 @@ function App() {
       setAbortController(null);
     }
   };
+
+
+    useEffect(() => {
+    const handler = (e) => {
+      const selectedVersion = e.detail;
+      setProjectVersion(selectedVersion);
+      console.log("✅ Version changed to:", selectedVersion);
+
+      const versionMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Version has been switched to ${selectedVersion}`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === currentChatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, versionMessage],
+                updatedAt: new Date(),
+              }
+            : chat
+        )
+      );
+    };
+
+    window.addEventListener("version-selected", handler);
+    return () => window.removeEventListener("version-selected", handler);
+  }, [currentChatId]);
+
+
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -536,6 +664,38 @@ function App() {
             </div>
           )}
         </div>
+
+        <div className="view-prompts-container right-4 sm:right-6 md:right-8 lg:right-16 xl:right-24 2xl:right-30 bottom-[6.8rem] z-20 absolute">
+          <div className="relative group z-30">
+            <button
+              onClick={() => setShowDropdown((prev) => !prev)}
+              className="view-prompts-button inline-flex items-center gap-1"
+            >
+              <Sparkles className="w-4 h-4" />
+              View Prompts
+            </button>
+
+            {showDropdown && (
+              <div className="view-prompts-menu absolute bottom-full mb-2 w-56 bg-white border border-gray-200 rounded-md shadow-md z-40">
+                {options.map((option) => (
+                  <div
+                    key={option.heading}
+                    onClick={() => handleSelect(option.heading)}
+                    className="view-prompts-item"
+                  >
+                    <div className="font-semibold text-sm">
+                      {option.heading}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {option.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
 
         <div className="bg-white border-t border-gray-200 px-4 py-3 flex-shrink-0">
           <div className="max-w-3xl mx-auto">

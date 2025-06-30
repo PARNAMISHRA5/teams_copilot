@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Plus, MessageSquare, Sparkles, Home, Menu, X, Square } from 'lucide-react';
+import { SendHorizontal , Plus, MessageSquare, Sparkles, Home, Menu, X, Square } from 'lucide-react';
 import ChatSidebar from './components/ChatSidebar';
 import ChatMessage from './components/ChatMessage';
 
@@ -345,7 +345,7 @@ function App() {
                     }`}
                     title={isGenerating ? 'Stop generation' : 'Send message'}
                   >
-                    {isGenerating ? <Square className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    {isGenerating ? <Square className="w-4 h-4" /> : <SendHorizontal className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -430,7 +430,7 @@ function App() {
                   }`}
                   title={isGenerating ? 'Stop generation' : 'Send message'}
                 >
-                  {isGenerating ? <Square className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                  {isGenerating ? <Square className="w-4 h-4" /> : <SendHorizontal className="w-4 h-4" />}
                 </button>
               </div>
             </div>

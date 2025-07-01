@@ -284,11 +284,11 @@ function App() {
     const controller = new AbortController();
     setAbortController(controller);
 
-    console.log("ENV CHECK:", {
-      SELECTED_PROJECT: process.env.REACT_APP_SELECTED_PROJECT,
-      CLIENT: process.env.REACT_APP_CLIENT,
-      TRACE_ID: process.env.REACT_APP_TRACE_ID,
-    });
+    // console.log("ENV CHECK:", {
+    //   SELECTED_PROJECT: process.env.REACT_APP_SELECTED_PROJECT,
+    //   CLIENT: process.env.REACT_APP_CLIENT,
+    //   TRACE_ID: process.env.REACT_APP_TRACE_ID,
+    // });
 
     try {
       const currentChatMessages = chats.find(c => c.id === chatId)?.messages || [];
@@ -366,21 +366,72 @@ try {
   references = [];
 }
 
-const aiMessage = {
-  id: (Date.now() + 1).toString(),
-  content: aiContent,
+// const aiMessage = {
+//   id: (Date.now() + 1).toString(),
+//   content: aiContent,
+//   role: 'assistant',
+//   timestamp: new Date(),
+//   images: [], // keep your image logic if needed
+//   references
+// };
+
+
+//       setChats(prev => prev.map(chat =>
+//         chat.id === chatId
+//           ? { ...chat, messages: [...chat.messages, aiMessage], updatedAt: new Date() }
+//           : chat
+//       ));
+
+const assistantId = (Date.now() + 1).toString();
+
+let newMessage = {
+  id: assistantId,
+  content: '',
   role: 'assistant',
   timestamp: new Date(),
-  images: [], // keep your image logic if needed
+   images: [], // keep your image logic if needed
   references
 };
 
+setChats(prev => prev.map(chat =>
+  chat.id === chatId
+    ? { ...chat, messages: [...chat.messages, newMessage], updatedAt: new Date() }
+    : chat
+));
 
-      setChats(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, aiMessage], updatedAt: new Date() }
-          : chat
-      ));
+// Simulate typing animation
+let index = 0;
+
+const typeNextChar = () => {
+  setChats(prev => prev.map(chat => {
+    if (chat.id !== chatId) return chat;
+
+    const updatedMessages = chat.messages.map(msg => {
+      if (msg.id !== assistantId) return msg;
+
+      return {
+        ...msg,
+        content: aiContent.slice(0, index + 1)
+      };
+    });
+
+    return {
+      ...chat,
+      messages: updatedMessages,
+      updatedAt: new Date()
+    };
+  }));
+
+  index++;
+
+  if (index < aiContent.length) {
+    setTimeout(typeNextChar, 12); // adjust typing speed here (ms per char)
+  }
+};
+
+typeNextChar();
+scrollToBottom();
+
     } catch (error) {
       const errorContent = error.name === 'AbortError' 
         ? 'Response generation was stopped.'

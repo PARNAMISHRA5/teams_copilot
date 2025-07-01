@@ -353,7 +353,7 @@ try {
       id: `ref-${index + 1}`,
       title: doc.metadata?.["Header 1"] || "Reference Document",
       source: doc.metadata?.source || "Unknown Source",
-      // url:doc.metadata?.url || DUMMY_URL,
+      url:doc.metadata?.url || DUMMY_URL,
       excerpt: doc.page_content || "",
       relevanceScore: doc.relevance_score || 0.75,
       type: "document"

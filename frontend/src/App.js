@@ -1,18 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizontal , Plus, MessageSquare, Sparkles, Home, Menu, X, Square } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SendHorizontal, Plus, MessageSquare, Sparkles, Menu, Square } from 'lucide-react';
 import ChatSidebar from './components/ChatSidebar';
 import ChatMessage from './components/ChatMessage';
 import ReferencesPanel from './components/ReferencesPanel';
 
 const DeleteIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-3 h-3"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
@@ -27,117 +20,130 @@ function App() {
   const [isReferencesOpen, setIsReferencesOpen] = useState(false);
   const [selectedMessageReferences, setSelectedMessageReferences] = useState(null);
   const [abortController, setAbortController] = useState(null);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const referencePanelRef = useRef(null);
 
-    const [project_version, setProjectVersion] = useState("v4.2");
-  const [showDropdown, setShowDropdown] = useState(false);
-  //   const [selectedOption, setSelectedOption] = useState("View Prompts");
-  const options = [
-    {
-      heading: "Switch Version",
-      description: "Select the TM Documentation version",
-    },
-    {
-      heading: "New Session",
-      description: "Starts new session with AI-DN",
-    },
-  ];
-  const handleSelect = (option) => {
-    setInput(option); // ✅ insert into input
-    setShowDropdown(false); // ✅ close dropdown
-  };
+      const [project_version, setProjectVersion] = useState("v4.2");
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const showLanding = !currentChatId;
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
+
+  const closeReferences = useCallback(() => {
+    setIsReferencesOpen(false);
+    setSelectedMessageReferences(null);
+  }, []);
+
+  // Handle click outside to close references panel
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isReferencesOpen && referencePanelRef.current && !referencePanelRef.current.contains(event.target)) {
+        // Check if click is not on a references button
+        const isReferencesButton = event.target.closest('[data-references-button]');
+        if (!isReferencesButton) {
+          closeReferences();
+        }
+      }
+    };
+
+    if (isReferencesOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isReferencesOpen, closeReferences]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentChat?.messages]);
+  }, [currentChat?.messages, scrollToBottom]);
 
   useEffect(() => {
-    if (inputRef.current) inputRef.current.focus();
+    inputRef.current?.focus();
   }, [currentChatId]);
 
+  // Optimized localStorage operations
   useEffect(() => {
-    const savedChats = localStorage.getItem('teams-copilot-chats');
-    const savedCurrentChatId = localStorage.getItem('teams-copilot-current-chat');
-    const savedSidebarState = localStorage.getItem('teams-copilot-sidebar-collapsed');
+    try {
+      const savedChats = localStorage.getItem('teams-copilot-chats');
+      const savedCurrentChatId = localStorage.getItem('teams-copilot-current-chat');
+      const savedSidebarState = localStorage.getItem('teams-copilot-sidebar-collapsed');
 
-    if (savedChats) {
-      try {
-        const parsedChats = JSON.parse(savedChats).map((chat) => ({
+      if (savedChats) {
+        const parsedChats = JSON.parse(savedChats).map(chat => ({
           ...chat,
           createdAt: new Date(chat.createdAt),
           updatedAt: new Date(chat.updatedAt),
-          messages: chat.messages.map((msg) => ({
+          messages: chat.messages.map(msg => ({
             ...msg,
             timestamp: new Date(msg.timestamp)
           }))
         }));
         setChats(parsedChats);
 
-        if (savedCurrentChatId && parsedChats.find((chat) => chat.id === savedCurrentChatId)) {
+        if (savedCurrentChatId && parsedChats.find(chat => chat.id === savedCurrentChatId)) {
           setCurrentChatId(savedCurrentChatId);
         }
-      } catch (error) {
-        console.error('Error loading chats:', error);
       }
-    }
 
-    if (savedSidebarState) {
-      setIsSidebarCollapsed(JSON.parse(savedSidebarState));
+      if (savedSidebarState) {
+        setIsSidebarCollapsed(JSON.parse(savedSidebarState));
+      }
+    } catch (error) {
+      console.error('Error loading chats:', error);
     }
-
     setHasInitialized(true);
   }, []);
 
+  // Debounced localStorage saves
   useEffect(() => {
     if (hasInitialized) {
-      localStorage.setItem('teams-copilot-chats', JSON.stringify(chats));
+      const timer = setTimeout(() => {
+        localStorage.setItem('teams-copilot-chats', JSON.stringify(chats));
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [chats, hasInitialized]);
 
   useEffect(() => {
     if (hasInitialized) {
-      if (currentChatId) {
-        localStorage.setItem('teams-copilot-current-chat', currentChatId);
-      } else {
-        localStorage.removeItem('teams-copilot-current-chat');
-      }
+      const timer = setTimeout(() => {
+        if (currentChatId) {
+          localStorage.setItem('teams-copilot-current-chat', currentChatId);
+        } else {
+          localStorage.removeItem('teams-copilot-current-chat');
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [currentChatId, hasInitialized]);
 
   useEffect(() => {
     if (hasInitialized) {
-      localStorage.setItem('teams-copilot-sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+      const timer = setTimeout(() => {
+        localStorage.setItem('teams-copilot-sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [isSidebarCollapsed, hasInitialized]);
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
 
-  const handleReferencesToggle = (messageId, references) => {
+  const handleReferencesToggle = useCallback((messageId, references) => {
     if (isReferencesOpen && selectedMessageReferences?.messageId === messageId) {
-      // Close if same message clicked
-      setIsReferencesOpen(false);
-      setSelectedMessageReferences(null);
+      closeReferences();
     } else {
-      // Open with new references
       setSelectedMessageReferences({ messageId, references });
       setIsReferencesOpen(true);
     }
-  };
+  }, [isReferencesOpen, selectedMessageReferences?.messageId, closeReferences]);
 
-  const closeReferences = () => {
-    setIsReferencesOpen(false);
-    setSelectedMessageReferences(null);
-  };
-
-  const createNewChat = () => {
+  const createNewChat = useCallback(() => {
     const newChat = {
       id: Date.now().toString(),
       title: 'New Chat',
@@ -147,162 +153,96 @@ function App() {
     };
     setChats(prev => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
-  };
+  }, []);
 
-  const generateChatTitle = (chat) => {
-    if (!chat.messages || chat.messages.length === 0) return 'New Chat';
-    const greetings = [
-      'hi', 'hello', 'hey', 'hiya', 'sup', 'yo', 'hii', 'hiii', 'hiiii',
-      'good morning', 'good afternoon', 'good evening', 'good night',
-      'morning', 'afternoon', 'evening', 'night', 'whats up', "what's up",
-      'wassup', 'how are you', 'how you doing', 'howdy', 'greetings',
-      'salutations', 'aloha', 'bonjour', 'hola', 'thanks', 'thank you',
-      'ty', 'thx', 'ok', 'okay', 'yes', 'no', 'yep', 'nope', 'yeah', 'yup',
-      'cool', 'nice', 'great', 'awesome'
-    ];
-
+  const generateChatTitle = useCallback((chat) => {
+    if (!chat.messages?.length) return 'New Chat';
+    
+    const greetings = ['hi', 'hello', 'hey', 'thanks', 'ok', 'yes', 'no'];
     const isGreetingMessage = (text) => {
       const cleanText = text.replace(/[.,!?;:]+$/, '').trim().toLowerCase();
-      return greetings.includes(cleanText) ||
-        greetings.some(greet => cleanText.startsWith(greet + ' ') || cleanText === greet) ||
-        cleanText.length <= 3 || /^[.,!?;:\s]+$/.test(cleanText);
-    };
-
-    const cleanTitle = (text) => {
-      let cleaned = text.replace(/\s+/g, ' ').trim().replace(/[*_`~]/g, '');
-      return cleaned.length > 0 ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1).replace(/[.!?]+$/, '') : '';
+      return greetings.some(greet => 
+        cleanText === greet || cleanText.startsWith(greet + ' ') || cleanText.length <= 3
+      );
     };
 
     const firstValidUserMessage = chat.messages.find(msg =>
-      msg.role?.toLowerCase() === 'user' && msg.content?.trim() &&
+      msg.role === 'user' && msg.content?.trim() && 
       !isGreetingMessage(msg.content) && msg.content.length >= 4
     );
 
     if (!firstValidUserMessage) return 'New Chat';
 
-    let title = cleanTitle(firstValidUserMessage.content.trim());
+    let title = firstValidUserMessage.content.trim().replace(/[*_`~]/g, '');
     if (title.length > 50) {
       const truncated = title.substring(0, 47);
       const lastSpace = truncated.lastIndexOf(' ');
       title = (lastSpace > 20 ? truncated.substring(0, lastSpace) : truncated) + '...';
     }
 
-    return title;
-  };
+    return title.charAt(0).toUpperCase() + title.slice(1).replace(/[.!?]+$/, '');
+  }, []);
 
-  const handleDeleteChat = (chatId, e) => {
-    e?.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this chat?')) {
-      deleteChat(chatId);
-    }
-  };
-
-  const deleteChat = (chatId) => {
+  const deleteChat = useCallback((chatId) => {
     setChats(prev => prev.filter(chat => chat.id !== chatId));
     if (currentChatId === chatId) setCurrentChatId(null);
-  };
+  }, [currentChatId]);
 
-  const stopGeneration = () => {
+  const stopGeneration = useCallback(() => {
     if (abortController) {
-      console.log('🛑 Stopping generation...');
       abortController.abort();
       setAbortController(null);
       setIsGenerating(false);
     }
-  };
+  }, [abortController]);
 
-  // Enhanced function to parse RAG response and extract images/references
-  const parseRAGResponse = (content) => {
+  // Simplified RAG response parser
+  const parseRAGResponse = useCallback((content) => {
     const images = [];
     const references = [];
     
-    // Extract image references (format: aidn_000, aidn_001, etc.)
-    const imageRegex = /aidn_(\d{3})/g;
-    let imageMatch;
-    const foundImages = new Set(); // Prevent duplicates
-    
-    while ((imageMatch = imageRegex.exec(content)) !== null) {
-      const imageIndex = imageMatch[1];
-      if (!foundImages.has(imageIndex)) {
-        foundImages.add(imageIndex);
+    // Extract image references
+    const imageMatches = content.match(/aidn_(\d{3})/g);
+    if (imageMatches) {
+      const uniqueImages = [...new Set(imageMatches)];
+      uniqueImages.forEach(match => {
+        const index = match.split('_')[1];
         images.push({
-          index: imageIndex,
-          url: `/api/images/aidn_${imageIndex}.jpeg`,// This will be your actual image endpoint
-          alt: `Reference Image ${imageIndex}`,
-          placeholder: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk0YTNiOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlICR7aW1hZ2VJbmRleH08L3RleHQ+PC9zdmc+`
+          index,
+          url: `/api/images/${match}.jpeg`,
+          alt: `Reference Image ${index}`
         });
-      }
+      });
     }
 
-    // Generate mock references based on content analysis
-    // In real implementation, these would come from your RAG pipeline
+    // Generate mock references based on content
     const contentLower = content.toLowerCase();
-    
-    if (contentLower.includes('api') || contentLower.includes('endpoint') || contentLower.includes('rest')) {
-      references.push({
-        id: 'ref-api-1',
-        title: 'REST APIs for OCM Functionality',
-        source: 'Technical Documentation',
-        url: '/docs/rest-apis-ocm-v4',
-        excerpt: 'Managing Integrity Validation Using RESTful API. The TM server application provides integrity validation functions...',
-        relevanceScore: 0.95,
-        type: 'documentation'
-      });
-    }
+    const refTypes = [
+      { keywords: ['api', 'endpoint', 'rest'], ref: { id: 'ref-api-1', title: 'REST APIs for OCM Functionality', source: 'Technical Documentation', type: 'documentation' }},
+      { keywords: ['integrity', 'validation'], ref: { id: 'ref-integrity-1', title: 'Integrity Validation Process', source: 'System Guide', type: 'guide' }},
+      { keywords: ['authentication', 'security'], ref: { id: 'ref-auth-1', title: 'HTTP Basic Authentication', source: 'Security Documentation', type: 'security' }}
+    ];
 
-    if (contentLower.includes('integrity') || contentLower.includes('validation') || contentLower.includes('sealing')) {
-      references.push({
-        id: 'ref-integrity-1',
-        title: 'Integrity Validation and Sealing Process',
-        source: 'System Administration Guide',
-        url: '/docs/integrity-validation',
-        excerpt: 'Sealing critical resources including managing snapshots, clean reference state, critical resources DB...',
-        relevanceScore: 0.88,
-        type: 'guide'
-      });
-    }
+    refTypes.forEach(({ keywords, ref }) => {
+      if (keywords.some(keyword => contentLower.includes(keyword))) {
+        references.push({ ...ref, relevanceScore: Math.random() * 0.3 + 0.7 });
+      }
+    });
 
-    if (contentLower.includes('authentication') || contentLower.includes('security') || contentLower.includes('user')) {
-      references.push({
-        id: 'ref-auth-1',
-        title: 'HTTP Basic Authentication Implementation',
-        source: 'Security Documentation',
-        url: '/docs/authentication',
-        excerpt: 'RESTful endpoints TM product secured HTTP Basic Authentication leverage TM user management...',
-        relevanceScore: 0.82,
-        type: 'security'
-      });
-    }
-
-    if (contentLower.includes('json') || contentLower.includes('format') || contentLower.includes('response')) {
-      references.push({
-        id: 'ref-json-1',
-        title: 'API Response Format Specification',
-        source: 'API Reference',
-        url: '/docs/api-response-format',
-        excerpt: 'The API return data JSON format. The format requested based HTTP except header...',
-        relevanceScore: 0.75,
-        type: 'reference'
-      });
-    }
-
-    // Always add at least one reference for demo purposes
     if (references.length === 0) {
       references.push({
         id: 'ref-general-1',
         title: 'Teams Copilot Documentation',
         source: 'User Guide',
-        url: '/docs/teams-copilot-guide',
-        excerpt: 'Comprehensive guide for using Teams Copilot and its various features...',
-        relevanceScore: 0.70,
-        type: 'guide'
+        type: 'guide',
+        relevanceScore: 0.70
       });
     }
 
     return { images, references };
-  };
+  }, []);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || isGenerating) return;
 
     let chatId = currentChatId;
@@ -327,90 +267,36 @@ function App() {
       timestamp: new Date()
     };
 
-    if (input.trim().toLowerCase() === "new session") {
-      // Trigger new chat
-      const newChat = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: [
-          {
-            id: (Date.now() + 1).toString(),
-            content: "New session started.",
-            role: "assistant",
-            timestamp: new Date(),
-          },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    setChats(prev => prev.map(chat =>
+      chat.id === chatId
+        ? {
+            ...chat,
+            messages: [...chat.messages, userMessage],
+            title: chat.messages.length === 0 ? generateChatTitle({ messages: [userMessage] }) : chat.title,
+            updatedAt: new Date()
+          }
+        : chat
+    ));
 
-      setChats((prev) => [newChat, ...prev]);
-      setCurrentChatId(newChat.id);
-      setInput("");
-      return;
-    }
-
-    if (input.trim().toLowerCase() === "switch version") {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        content: "__version_selection__",
-        role: "assistant",
-        timestamp: new Date(),
-      };
-
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === chatId
-            ? {
-                ...chat,
-                messages: [...chat.messages, userMessage, aiMessage],
-                updatedAt: new Date(),
-              }
-            : chat
-        )
-      );
-
-      setInput("");
-      return;
-    }
-
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === chatId
-          ? {
-              ...chat,
-              messages: [...chat.messages, userMessage],
-              title:
-                chat.messages.length === 0
-                  ? input.trim().slice(0, 50) +
-                    (input.trim().length > 50 ? "..." : "")
-                  : chat.title,
-              updatedAt: new Date(),
-            }
-          : chat
-      )
-    );
-
-    setInput("");
+    setInput('');
     setIsGenerating(true);
 
-    // Create abort controller for this request
     const controller = new AbortController();
     setAbortController(controller);
+
     console.log("ENV CHECK:", {
       SELECTED_PROJECT: process.env.REACT_APP_SELECTED_PROJECT,
       CLIENT: process.env.REACT_APP_CLIENT,
       TRACE_ID: process.env.REACT_APP_TRACE_ID,
     });
 
-
     try {
-      const currentChatMessages =
-        chats.find((c) => c.id === chatId)?.messages || [];
+      const currentChatMessages = chats.find(c => c.id === chatId)?.messages || [];
 
       const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
       const ENV_CLIENT = process.env.REACT_APP_CLIENT;
       const TRACE_ID = process.env.REACT_APP_TRACE_ID;
+      const API_BASE = process.env.REACT_APP_API_URL;
 
       const lastAssistantMessage = [...currentChatMessages]
         .reverse()
@@ -419,7 +305,7 @@ function App() {
       const payload = {
         message: input.trim(),
         selected_project: ENV_PROJECT,
-        project_version: project_version,
+        selected_version: project_version,
         user_details: {
           user_id: "user123",
           user_objectid: "objectid123",
@@ -431,37 +317,64 @@ function App() {
 
       console.log("🚀 Final Payload to Backend:", payload);
 
-      const response = await fetch("http://localhost:3001/api/llama", {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
 
-      if (!response.ok)
-        throw new Error(
-          (await response.json()).error || `HTTP ${response.status}`
-        );
+      if (!response.ok) throw new Error((await response.json()).error || `HTTP ${response.status}`);
 
       const data = await response.json();
-      let aiContent = data.choices?.[0]?.message?.content || 'Sorry, I received an empty response.';
+      let aiContent = data.answer || 'Sorry, I received an empty response.';
       
-      // For demo purposes, add some image references to responses about APIs or technical topics
-      if (aiContent.toLowerCase().includes('api') || aiContent.toLowerCase().includes('rest') || aiContent.toLowerCase().includes('endpoint')) {
+      // Add demo image references
+      if (aiContent.toLowerCase().includes('api') || aiContent.toLowerCase().includes('rest')) {
         aiContent += '\n\nHere are some relevant diagrams: aidn_000 aidn_001';
       }
       
-      // Parse the response for images and references
-      const { images, references } = parseRAGResponse(aiContent);
+      // const { images, references } = parseRAGResponse(aiContent);
       
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        content: aiContent,
-        role: 'assistant',
-        timestamp: new Date(),
-        images: images,
-        references: references
-      };
+      // const aiMessage = {
+      //   id: (Date.now() + 1).toString(),
+      //   content: aiContent,
+      //   role: 'assistant',
+      //   timestamp: new Date(),
+      //   images,
+      //   references
+      // };
+
+      let references = [];
+      const DUMMY_URL = process.env.REACT_APP_DUMMY_URL;
+try {
+  if (data.source_documents) {
+    references = JSON.parse(data.source_documents).map((doc, index) => ({
+      id: `ref-${index + 1}`,
+      title: doc.metadata?.["Header 1"] || "Reference Document",
+      source: doc.metadata?.source || "Unknown Source",
+      // url:doc.metadata?.url || DUMMY_URL,
+      excerpt: doc.page_content || "",
+      relevanceScore: doc.relevance_score || 0.75,
+      type: "document"
+    }));
+    console.log(references)
+
+  }
+} catch (e) {
+  console.warn("⚠️ Failed to parse source_documents:", e);
+  references = [];
+}
+
+const aiMessage = {
+  id: (Date.now() + 1).toString(),
+  content: aiContent,
+  role: 'assistant',
+  timestamp: new Date(),
+  images: [], // keep your image logic if needed
+  references
+};
+
 
       setChats(prev => prev.map(chat =>
         chat.id === chatId
@@ -469,43 +382,32 @@ function App() {
           : chat
       ));
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        const abortMessage = {
-          id: (Date.now() + 1).toString(),
-          content: 'Response generation was stopped.',
-          role: 'assistant',
-          timestamp: new Date(),
-          images: [],
-          references: []
-        };
-        setChats(prev => prev.map(chat =>
-          chat.id === chatId
-            ? { ...chat, messages: [...chat.messages, abortMessage], updatedAt: new Date() }
-            : chat
-        ));
-      } else {
-        const errorMessage = {
-          id: (Date.now() + 1).toString(),
-          content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}.`,
-          role: 'assistant',
-          timestamp: new Date(),
-          images: [],
-          references: []
-        };
-        setChats(prev => prev.map(chat =>
-          chat.id === chatId
-            ? { ...chat, messages: [...chat.messages, errorMessage], updatedAt: new Date() }
-            : chat
-        ));
-      }
+      const errorContent = error.name === 'AbortError' 
+        ? 'Response generation was stopped.'
+        : `Sorry, I encountered an error: ${error.message}.`;
+      
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        content: errorContent,
+        role: 'assistant',
+        timestamp: new Date(),
+        images: [],
+        references: []
+      };
+      
+      setChats(prev => prev.map(chat =>
+        chat.id === chatId
+          ? { ...chat, messages: [...chat.messages, errorMessage], updatedAt: new Date() }
+          : chat
+      ));
     } finally {
       setIsGenerating(false);
       setAbortController(null);
     }
-  };
+  }, [input, isGenerating, currentChatId, chats, generateChatTitle, parseRAGResponse]);
 
 
-    useEffect(() => {
+      useEffect(() => {
     const handler = (e) => {
       const selectedVersion = e.detail;
       setProjectVersion(selectedVersion);
@@ -535,18 +437,18 @@ function App() {
     return () => window.removeEventListener("version-selected", handler);
   }, [currentChatId]);
 
-
-
-  const handleKeyPress = (e) => {
+  const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (isGenerating) {
-        stopGeneration();
-      } else {
-        sendMessage();
-      }
+      isGenerating ? stopGeneration() : sendMessage();
     }
-  };
+  }, [isGenerating, stopGeneration, sendMessage]);
+
+  const handleTextareaInput = useCallback((e) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = Math.min(target.scrollHeight, 96) + 'px';
+  }, []);
 
   if (showLanding) {
     return (
@@ -571,37 +473,30 @@ function App() {
             </h1>
             <p className="text-sm text-gray-600 mb-6">Your AI-powered assistant for Microsoft Teams</p>
 
-            <div className="relative">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
-                <div className="flex items-end gap-2 p-3">
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Ask me anything..."
-                    disabled={isGenerating}
-                    className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 bg-transparent"
-                    rows={1}
-                    onInput={(e) => {
-                      const target = e.target;
-                      target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 96) + 'px';
-                    }}
-                  />
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center w-7 h-7 text-white rounded-lg transition-all duration-200 flex-shrink-0 ${
-                      isGenerating 
-                        ? 'bg-red-600 hover:bg-red-700' 
-                        : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
-                    title={isGenerating ? 'Stop generation' : 'Send message'}
-                  >
-                    {isGenerating ? <Square className="w-4 h-4" /> : <SendHorizontal className="w-4 h-4" />}
-                  </button>
-                </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
+              <div className="flex items-end gap-2 p-3">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Ask me anything..."
+                  disabled={isGenerating}
+                  className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 bg-transparent"
+                  rows={1}
+                  onInput={handleTextareaInput}
+                />
+                <button
+                  onClick={isGenerating ? stopGeneration : sendMessage}
+                  disabled={!isGenerating && !input.trim()}
+                  className={`flex items-center justify-center w-7 h-7 text-white rounded-lg transition-all duration-200 flex-shrink-0 ${
+                    isGenerating 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  {isGenerating ? <Square className="w-4 h-4" /> : <SendHorizontal className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           </div>
@@ -665,38 +560,6 @@ function App() {
           )}
         </div>
 
-        <div className="view-prompts-container right-4 sm:right-6 md:right-8 lg:right-16 xl:right-24 2xl:right-30 bottom-[6.8rem] z-20 absolute">
-          <div className="relative group z-30">
-            <button
-              onClick={() => setShowDropdown((prev) => !prev)}
-              className="view-prompts-button inline-flex items-center gap-1"
-            >
-              <Sparkles className="w-4 h-4" />
-              View Prompts
-            </button>
-
-            {showDropdown && (
-              <div className="view-prompts-menu absolute bottom-full mb-2 w-56 bg-white border border-gray-200 rounded-md shadow-md z-40">
-                {options.map((option) => (
-                  <div
-                    key={option.heading}
-                    onClick={() => handleSelect(option.heading)}
-                    className="view-prompts-item"
-                  >
-                    <div className="font-semibold text-sm">
-                      {option.heading}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {option.description}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-
         <div className="bg-white border-t border-gray-200 px-4 py-3 flex-shrink-0">
           <div className="max-w-3xl mx-auto">
             <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
@@ -710,11 +573,7 @@ function App() {
                   disabled={isGenerating}
                   className="flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[24px] max-h-24 disabled:opacity-50 text-sm"
                   rows={1}
-                  onInput={(e) => {
-                    const target = e.target;
-                    target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 96) + 'px';
-                  }}
+                  onInput={handleTextareaInput}
                 />
                 <button
                   onClick={isGenerating ? stopGeneration : sendMessage}
@@ -724,7 +583,6 @@ function App() {
                       ? 'bg-red-600 hover:bg-red-700' 
                       : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
                   }`}
-                  title={isGenerating ? 'Stop generation' : 'Send message'}
                 >
                   {isGenerating ? <Square className="w-4 h-4" /> : <SendHorizontal className="w-4 h-4" />}
                 </button>
@@ -734,12 +592,13 @@ function App() {
         </div>
       </div>
 
-      {/* References Panel */}
-      <ReferencesPanel
-        isOpen={isReferencesOpen}
-        references={selectedMessageReferences?.references || []}
-        onClose={closeReferences}
-      />
+      <div ref={referencePanelRef}>
+        <ReferencesPanel
+          isOpen={isReferencesOpen}
+          references={selectedMessageReferences?.references || []}
+          onClose={closeReferences}
+        />
+      </div>
     </div>
   );
 }

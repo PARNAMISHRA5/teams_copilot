@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, ExternalLink, FileText, Book, Shield, Settings } from 'lucide-react';
 
 const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
+  const [expandedRefs, setExpandedRefs] = useState({});
+
   if (!isOpen) return null;
 
   const getTypeIcon = (type) => {
@@ -18,7 +20,6 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
         return <FileText className="w-4 h-4 text-gray-500" />;
     }
   };
-
 
   return (
     <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-40 flex flex-col">
@@ -56,12 +57,14 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
               <div
                 key={reference.id || index}
                 className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer"
-                onClick={() => {
-                  // TODO: Handle reference click - open in new tab or show details
-                  console.log('Reference clicked:', reference);
-                }}
+                onClick={() =>
+                  setExpandedRefs((prev) => ({
+                    ...prev,
+                    [reference.id]: !prev[reference.id],
+                  }))
+                }
               >
-                {/* Reference Header */}
+                {/* Header */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2 flex-1">
                     {getTypeIcon(reference.type)}
@@ -69,7 +72,17 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
                       {reference.title}
                     </span>
                   </div>
-                  <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0 ml-2" />
+
+                  {/* External Link */}
+                  <ExternalLink
+                    className="w-3 h-3 text-gray-400 flex-shrink-0 ml-2 hover:text-blue-500"
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent expanding
+                      const finalUrl = reference.url || 'https://example.com';
+                      window.open(finalUrl, '_blank');
+                    }}
+                    title="Open in new tab"
+                  />
                 </div>
 
                 {/* Source */}
@@ -78,23 +91,32 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
                 </div>
 
                 {/* Excerpt */}
-                <div className="text-xs text-gray-700 mb-3 line-clamp-3">
+                <div className={`text-xs text-gray-700 mb-2 ${expandedRefs[reference.id] ? '' : 'line-clamp-3'}`}>
                   {reference.excerpt}
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between">
-                  
-                  {/* URL Preview */}
-                  {reference.url && (
-                    <span className="text-xs text-gray-500 truncate ml-2">
-                      {reference.url.length > 25 
-                        ? `...${reference.url.slice(-22)}` 
-                        : reference.url
-                      }
-                    </span>
-                  )}
+                {/* Show More / Less */}
+                <div
+                  className="text-xs text-blue-500 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedRefs((prev) => ({
+                      ...prev,
+                      [reference.id]: !prev[reference.id],
+                    }));
+                  }}
+                >
+                  {expandedRefs[reference.id] ? 'Show Less' : 'Show More'}
                 </div>
+
+                {/* URL preview */}
+                {reference.url && (
+                  <div className="text-xs text-gray-500 mt-1 truncate" title={reference.url}>
+                    {reference.url.length > 40
+                      ? `...${reference.url.slice(-35)}`
+                      : reference.url}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -104,7 +126,6 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
       {/* Footer */}
       <div className="border-t border-gray-200 p-3">
         <div className="text-xs text-gray-500 text-center">
-          {/* TODO: Replace with actual RAG pipeline info */}
           References from documentation search
         </div>
       </div>

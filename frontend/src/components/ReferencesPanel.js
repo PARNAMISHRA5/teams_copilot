@@ -78,7 +78,7 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
                     className="w-3 h-3 text-gray-400 flex-shrink-0 ml-2 hover:text-blue-500"
                     onClick={(e) => {
                       e.stopPropagation(); // prevent expanding
-                      const finalUrl = reference.url || 'https://example.com';
+                      const finalUrl = reference.url || '';
                       window.open(finalUrl, '_blank');
                     }}
                     title="Open in new tab"
@@ -109,14 +109,7 @@ const ReferencesPanel = ({ isOpen, references = [], onClose }) => {
                   {expandedRefs[reference.id] ? 'Show Less' : 'Show More'}
                 </div>
 
-                {/* URL preview */}
-                {reference.url && (
-                  <div className="text-xs text-gray-500 mt-1 truncate" title={reference.url}>
-                    {reference.url.length > 40
-                      ? `...${reference.url.slice(-35)}`
-                      : reference.url}
-                  </div>
-                )}
+
               </div>
             ))}
           </div>

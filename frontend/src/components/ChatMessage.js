@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, ThumbsUp, ThumbsDown, Check, FileText, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
-import defaultBotLogo from '../assets/dn logo.png';
+import defaultBotLogo from '../assets/DBD.png';
 
 const ChatMessage = ({ 
   message, 
@@ -335,7 +335,7 @@ const ChatMessage = ({
         imageMatches.forEach((match) => {
           const imageSrc = `/api/images/${match}.jpeg`;
           const imageSize = isTeamsContext ? 'max-width: 280px; max-height: 180px;' : 'max-width: 320px; max-height: 220px;';
-          const imageElement = `<span class="inline-image-container" style="display: block; margin: 12px 0;">
+          const imageElement = `<span class="inline-image-container" style="display: block; margin: 6px 0;">
             <img 
               src="${imageSrc}" 
               alt="Reference ${match}" 
@@ -425,20 +425,23 @@ const ChatMessage = ({
           {/* Bot Message */}
           <div className={`flex-1 ${getResponsiveClasses()}`}>
             <div className="bg-gray-50 border border-gray-200 rounded-lg rounded-tl-sm p-3 shadow-sm">
-              {isGenerating ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <div className="flex space-x-1">
-                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></div>
-                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span className="text-xs text-gray-400">Generating...</span>
+            {isGenerating ? (
+              <div className="flex items-center gap-2 text-gray-500 pl-2 pt-1">
+                <div className="flex space-x-1">
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
-              ) : (
+                <span className="text-xs text-gray-400">Generating...</span>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg rounded-tl-sm p-3 shadow-sm">
                 <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
                   {formatContent(message.content)}
                 </div>
-              )}
+              </div>
+            )}
+
             </div>
 
             {/* Bot message actions */}

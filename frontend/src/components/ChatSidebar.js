@@ -248,11 +248,7 @@ const ChatSidebar = ({
                     {generateChatTitle(chat)}
                   </h3>
                   <p className={`text-gray-500 ${classes.text}`}>{formatDate(chat.updatedAt)}</p>
-                  {chat.messages?.length > 0 && (
-                    <p className={`text-gray-400 mt-0.5 truncate ${classes.text}`}>
-                      {chat.messages[chat.messages.length - 1]?.content?.slice(0, 30)}...
-                    </p>
-                  )}
+                  
                 </div>
                 {chatToDelete === chat.id ? (
                   <div className="ml-2 flex flex-col gap-1">

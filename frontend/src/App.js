@@ -7,11 +7,11 @@ import ReferencesPanel from './components/ReferencesPanel';
 
 // AI Model versions
 const AI_MODELS = [
-  { id: 'claude-4-sonnet', name: 'Claude 4 Sonnet', description: 'Balanced performance and speed' },
-  { id: 'claude-4-opus', name: 'Claude 4 Opus', description: 'Most capable, slower' },
-  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: 'Fast and capable' },
-  { id: 'llama-3-70b', name: 'Llama 3 70B', description: 'Open source alternative' },
-  { id: 'v4.2-maintenance', name: 'v4.2 Maintenance', description: 'Stable model with minimal drift' }
+  { id: 'claude-4-sonnet', name: 'Claude 4 Sonnet'},
+  { id: 'claude-4-opus', name: 'Claude 4 Opus'},
+  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+  { id: 'llama-3-70b', name: 'Llama 3 70B' },
+  { id: 'v4.2-maintenance', name: 'v4.2 Maintenance'}
 ];
 
 
@@ -79,80 +79,114 @@ const PlatformIndicator = ({ platform }) => {
 
 const CompactVersionSelector = ({ selectedModel, onModelChange, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownStyles, setDropdownStyles] = useState({});
+  const [openDirection, setOpenDirection] = useState('bottom');
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  // Close on outside click only
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        buttonRef.current && !buttonRef.current.contains(event.target) &&
-        dropdownRef.current && !dropdownRef.current.contains(event.target)
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
       ) {
         setIsOpen(false);
       }
     };
 
-    const handleScroll = () => setIsOpen(false);
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('scroll', handleScroll, true);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('scroll', handleScroll, true);
-      };
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Set dropdown position + open direction
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownHeight = 240; // estimated height of dropdown
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      const shouldOpenAbove = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+
+      setOpenDirection(shouldOpenAbove ? 'top' : 'bottom');
+
+      setDropdownStyles({
+        position: 'absolute',
+        top: shouldOpenAbove
+          ? rect.top + window.scrollY - dropdownHeight - 8
+          : rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        zIndex: 99999
+      });
     }
   }, [isOpen]);
 
-  const selectedModelData = AI_MODELS.find(model => model.id === selectedModel) || AI_MODELS[0];
+  const selectedModelData = AI_MODELS.find((m) => m.id === selectedModel) || AI_MODELS[0];
 
   return (
-    <div className="relative w-full max-w-xs">
-      <button
-        ref={buttonRef}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`w-full flex items-center justify-between gap-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
-          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-        }`}
-        title={`Current model: ${selectedModelData.name}`}
-      >
-        <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-gray-500" />
-          <span className="font-medium text-gray-700">{selectedModelData.name}</span>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
+    <>
+      <div className="relative w-full" ref={buttonRef}>
+        <button
+          onClick={() => !disabled && setIsOpen((prev) => !prev)}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          }`}
+          title={`Current model: ${selectedModelData.name}`}
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="w-4 h-4 text-gray-500" />
+            <span className="font-medium text-gray-700 truncate max-w-[120px]">{selectedModelData.name}</span>
+          </div>
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
 
-        {isOpen && (
+      {isOpen &&
+        createPortal(
           <div
             ref={dropdownRef}
-            // Adjusted positioning for dropdown: left-0 and w-full for better alignment in compact spaces
-            className="absolute top-full mt-2 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-[99999]"
+            style={dropdownStyles}
+            className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-[240px] overflow-y-auto"
           >
-          <div className="p-2">
-            <div className="text-xs font-semibold text-gray-500 px-2 py-1">Select AI Model</div>
-            {AI_MODELS.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => {
-                  onModelChange(model.id);
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
-                  selectedModel === model.id ? 'bg-blue-50 text-blue-700' : ''
-                }`}
-              >
-                <div className="font-medium text-sm">{model.name}</div>
-                <div className="text-xs text-gray-500">{model.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+            <div className="p-2">
+              <div className="text-xs font-semibold text-gray-500 px-2 py-1">Select AI Model</div>
+              {AI_MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => {
+                    onModelChange(model.id);
+                    console.log('Model changed to:', model.id);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
+                    selectedModel === model.id ? 'bg-blue-50 text-blue-700' : ''
+                  }`}
+                >
+                  <div className="font-medium text-sm">{model.name}</div>
+
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 };
+
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -494,12 +528,12 @@ function App() {
     }
   }, [isGenerating, stopGeneration, sendMessage]);
 
+
   const handleTextareaInput = useCallback((e) => {
     const target = e.target;
     target.style.height = 'auto';
-    target.style.height = Math.min(target.scrollHeight, platformInfo.isTeams ? 48 : 64) + 'px'; // Max height 48px for Teams (3 lines of text @ text-xs with line-height) and 64px for web (4 lines @ text-sm)
+    target.style.height = Math.min(target.scrollHeight, platformInfo.isTeams ? 32 : 64) + 'px'; // Max height 32px for Teams (2 lines) and 64px for web (4 lines)
   }, [platformInfo.isTeams]);
-
   // Landing page when no chat is selected
   if (showLanding) {
     return (

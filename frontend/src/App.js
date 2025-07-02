@@ -25,7 +25,11 @@ function App() {
   const inputRef = useRef(null);
   const referencePanelRef = useRef(null);
 
-      const [project_version, setProjectVersion] = useState("v4.2");
+  const [project_version, setProjectVersion] = useState("v4.2");
+  const [traceId, setTraceId] = useState('');
+
+
+
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const showLanding = !currentChatId;
@@ -295,7 +299,6 @@ function App() {
 
       const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
       const ENV_CLIENT = process.env.REACT_APP_CLIENT;
-      const TRACE_ID = process.env.REACT_APP_TRACE_ID;
       const API_BASE = process.env.REACT_APP_API_URL;
 
       const lastAssistantMessage = [...currentChatMessages]
@@ -312,7 +315,7 @@ function App() {
         },
         client: ENV_CLIENT,
         messages: lastAssistantMessage ? [lastAssistantMessage] : [],
-        trace_id: TRACE_ID,
+        trace_id: '',
       };
 
       console.log("🚀 Final Payload to Backend:", payload);
@@ -328,6 +331,10 @@ function App() {
 
       const data = await response.json();
       let aiContent = data.answer || 'Sorry, I received an empty response.';
+      if (data.traceid){
+        setTraceId(data.traceid);
+        console.log("Trace Id noted: ", traceId)
+      }
       
       // Add demo image references
       if (aiContent.toLowerCase().includes('api') || aiContent.toLowerCase().includes('rest')) {

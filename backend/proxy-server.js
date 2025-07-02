@@ -1,9 +1,8 @@
-// proxy-server.js - Complete version for Azure Llama API
+// proxy-server.js - GUARANTEED platform detection logging
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,15 +36,179 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`🔵 ${new Date().toISOString()} - ${req.method} ${req.path}`);
-  if (req.method === 'POST' && req.body) {
-    console.log('🔵 Request body keys:', Object.keys(req.body));
-    if (req.body.messages) {
-      console.log('🔵 Messages count:', req.body.messages.length);
+// Enhanced platform detection with guaranteed output
+const detectAndLogPlatform = (req) => {
+  const timestamp = new Date().toISOString();
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  const platform = req.body?.platform || {};
+  const clientIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'Unknown';
+  
+  console.log('\n🎯 ========== PLATFORM DETECTION START ==========');
+  console.log(`⏰ ${timestamp}`);
+  console.log(`🔗 IP: ${clientIP}`);
+  console.log(`📡 User-Agent: ${userAgent}`);
+  
+  // ALWAYS show what we received in the request body
+  console.log('\n📦 REQUEST BODY ANALYSIS:');
+  console.log(`📊 Platform object exists: ${!!platform}`);
+  console.log(`📊 Platform keys: ${Object.keys(platform || {}).join(', ') || 'NONE'}`);
+  
+  if (platform && Object.keys(platform).length > 0) {
+    console.log('\n✅ DETAILED PLATFORM DATA RECEIVED:');
+    console.log(`🎯 Platform: ${platform.specificPlatform || 'NOT_SPECIFIED'}`);
+    console.log(`📱 Source: ${platform.source || 'NOT_SPECIFIED'}`);
+    console.log(`🌐 Browser: ${platform.browser || 'NOT_SPECIFIED'}`);
+    console.log(`💻 Device: ${platform.deviceType || 'NOT_SPECIFIED'}`);
+    console.log(`🖥️ OS: ${platform.os || 'NOT_SPECIFIED'}`);
+    console.log(`🌍 Language: ${platform.language || 'NOT_SPECIFIED'}`);
+    
+    // Teams detection
+    if (platform.teams) {
+      console.log('\n🟢 === MICROSOFT TEAMS DATA ===');
+      console.log(`📍 Is in Teams: ${platform.teams.isInTeams || 'NOT_SPECIFIED'}`);
+      console.log(`📍 Teams Host: ${platform.teams.host || 'NOT_SPECIFIED'}`);
+      console.log(`📱 Teams Version: ${platform.teams.version || 'NOT_SPECIFIED'}`);
+      console.log(`🆔 Session ID: ${platform.teams.sessionId || 'NOT_SPECIFIED'}`);
+      console.log(`🌐 Locale: ${platform.teams.locale || 'NOT_SPECIFIED'}`);
+      console.log(`🎨 Theme: ${platform.teams.theme || 'NOT_SPECIFIED'}`);
+      
+      if (platform.teams.isInTeamsDesktop) {
+        console.log('💻 ⭐ TEAMS DESKTOP DETECTED ⭐');
+      } else if (platform.teams.isInTeamsMobile) {
+        console.log('📱 ⭐ TEAMS MOBILE DETECTED ⭐');
+      } else if (platform.teams.isInTeamsWebApp) {
+        console.log('🌐 ⭐ TEAMS WEB DETECTED ⭐');
+      }
+    } else {
+      console.log('\n❌ NO TEAMS DATA in platform object');
+    }
+    
+    // Screen info
+    if (platform.screen) {
+      console.log('\n📺 SCREEN INFO:');
+      console.log(`📏 Resolution: ${platform.screen.width}x${platform.screen.height}`);
+      console.log(`🎨 Color Depth: ${platform.screen.colorDepth}bit`);
+    }
+    
+    if (platform.window) {
+      console.log(`📐 Window: ${platform.window.innerWidth}x${platform.window.innerHeight}`);
+      console.log(`🔍 Pixel Ratio: ${platform.window.devicePixelRatio || 'Unknown'}`);
+    }
+    
+    // Connection info
+    if (platform.connection) {
+      console.log('\n📡 CONNECTION:');
+      console.log(`⚡ Type: ${platform.connection.effectiveType || 'Unknown'}`);
+      console.log(`📈 Speed: ${platform.connection.downlink || 'Unknown'} Mbps`);
+      console.log(`⏱️ RTT: ${platform.connection.rtt || 'Unknown'} ms`);
+    }
+    
+    console.log('\n🔧 SYSTEM:');
+    console.log(`🍪 Cookies: ${platform.cookieEnabled ? 'Enabled' : 'Disabled'}`);
+    console.log(`📶 Online: ${platform.onLine ? 'Yes' : 'No'}`);
+    
+  } else {
+    console.log('\n❌ NO PLATFORM DATA - USING USER AGENT FALLBACK');
+    
+    // Detailed user agent analysis
+    const ua = userAgent.toLowerCase();
+    console.log('\n🔍 USER AGENT ANALYSIS:');
+    
+    // Check for Teams indicators
+    const teamsIndicators = ['teams', 'msteams', 'microsoftteams'];
+    const foundTeamsIndicators = teamsIndicators.filter(indicator => ua.includes(indicator));
+    
+    if (foundTeamsIndicators.length > 0) {
+      console.log('🟢 ⭐ MICROSOFT TEAMS DETECTED FROM USER AGENT ⭐');
+      console.log(`🔍 Teams indicators found: ${foundTeamsIndicators.join(', ')}`);
+      
+      if (ua.includes('desktop') || ua.includes('electron')) {
+        console.log('💻 ⭐ TEAMS DESKTOP (User Agent) ⭐');
+      } else if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+        console.log('📱 ⭐ TEAMS MOBILE (User Agent) ⭐');
+      } else {
+        console.log('🌐 ⭐ TEAMS WEB (User Agent) ⭐');
+      }
+    } else {
+      console.log('🌐 WEB BROWSER DETECTED');
+      
+      // Browser detection
+      if (ua.includes('edg/')) {
+        console.log('🔵 Microsoft Edge');
+      } else if (ua.includes('chrome/') && !ua.includes('edg/')) {
+        console.log('🟢 Google Chrome');
+      } else if (ua.includes('firefox/')) {
+        console.log('🦊 Mozilla Firefox');
+      } else if (ua.includes('safari/') && !ua.includes('chrome/')) {
+        console.log('🍎 Safari');
+      } else {
+        console.log('❓ Unknown Browser');
+      }
+    }
+    
+    // Device detection
+    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+      console.log('📱 Mobile Device');
+    } else if (ua.includes('tablet') || ua.includes('ipad')) {
+      console.log('📱 Tablet Device');
+    } else {
+      console.log('💻 Desktop Device');
+    }
+    
+    // OS detection
+    if (ua.includes('windows')) {
+      console.log('🪟 Windows OS');
+    } else if (ua.includes('mac')) {
+      console.log('🍎 macOS');
+    } else if (ua.includes('linux')) {
+      console.log('🐧 Linux OS');
+    } else if (ua.includes('android')) {
+      console.log('🤖 Android OS');
+    } else if (ua.includes('ios')) {
+      console.log('📱 iOS');
     }
   }
+  
+  console.log('\n🔄 REQUEST SUMMARY:');
+  console.log(`📝 Method: ${req.method}`);
+  console.log(`🛣️ Path: ${req.path}`);
+  console.log(`📊 Body size: ${JSON.stringify(req.body || {}).length} chars`);
+  
+  if (req.body?.messages && Array.isArray(req.body.messages)) {
+    const lastMessage = req.body.messages[req.body.messages.length - 1];
+    console.log(`💬 Last message: ${lastMessage?.content?.substring(0, 80)}...`);
+    console.log(`📊 Total messages: ${req.body.messages.length}`);
+  }
+  
+  console.log('🎯 ========== PLATFORM DETECTION END ==========\n');
+  
+  // Return a summary for quick reference
+  const summary = {
+    timestamp,
+    hasPlatformData: !!(platform && Object.keys(platform).length > 0),
+    platformType: platform?.specificPlatform || 'user-agent-detected',
+    isTeams: !!(platform?.teams?.isInTeams || userAgent.toLowerCase().includes('teams')),
+    teamsType: platform?.teams?.isInTeamsDesktop ? 'desktop' : 
+               platform?.teams?.isInTeamsMobile ? 'mobile' : 
+               platform?.teams?.isInTeamsWebApp ? 'web' : 'unknown',
+    browser: platform?.browser || 'from-user-agent',
+    device: platform?.deviceType || 'from-user-agent'
+  };
+  
+  console.log('📋 QUICK SUMMARY:', summary);
+  return summary;
+};
+
+// Enhanced request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`\n🔵 ${timestamp} - ${req.method} ${req.path}`);
+  
+  // Log ALL requests to see what's coming in
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Request has body with keys:', Object.keys(req.body));
+  }
+  
   next();
 });
 
@@ -152,15 +315,26 @@ const prepareRequestPayload = (messages, max_tokens, temperature, top_p) => {
   return payload;
 };
 
-// Main proxy endpoint for Azure Llama API
+// Main proxy endpoint for Azure Llama API - WITH GUARANTEED PLATFORM DETECTION
 app.post('/api/llama', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    console.log('🔵 === NEW AZURE LLAMA API REQUEST ===');
-    console.log('🔵 Request timestamp:', new Date().toISOString());
+    console.log('🔵 === STARTING AZURE LLAMA API REQUEST ===');
     
-    const { messages, max_tokens = 500, temperature = 0.7, top_p = 0.9 } = req.body;
+    // 🎯 GUARANTEED PLATFORM DETECTION - CALL IT IMMEDIATELY
+    console.log('🎯 🚨 CALLING PLATFORM DETECTION NOW 🚨');
+    const platformSummary = detectAndLogPlatform(req);
+    
+    const { messages, max_tokens = 500, temperature = 0.7, top_p = 0.9, platform } = req.body;
+    
+    // Show platform summary at start of processing
+    console.log(`🎯 Processing request from: ${platformSummary.platformType}`);
+    if (platformSummary.isTeams) {
+      console.log(`📱 ⭐ TEAMS REQUEST - Type: ${platformSummary.teamsType} ⭐`);
+    } else {
+      console.log(`🌐 WEB BROWSER REQUEST - ${platformSummary.browser}`);
+    }
     
     // Validate environment
     if (!process.env.LLAMA_API_ENDPOINT) {
@@ -198,6 +372,7 @@ app.post('/api/llama', async (req, res) => {
       content: lastMessage.content?.substring(0, 100) + '...'
     });
 
+    // Remove platform info from the payload sent to AI (keep messages only)
     const requestPayload = prepareRequestPayload(optimizedMessages, max_tokens, temperature, top_p);
     
     console.log('🔵 Making request to Azure Llama API:', process.env.LLAMA_API_ENDPOINT);
@@ -249,6 +424,12 @@ app.post('/api/llama', async (req, res) => {
       // Log response content preview
       if (data.choices && data.choices[0] && data.choices[0].message) {
         console.log('🔵 AI Response preview:', data.choices[0].message.content?.substring(0, 100) + '...');
+      }
+      
+      // Log final platform context for successful response
+      console.log(`✅ Response delivered to: ${platformSummary.platformType}`);
+      if (platformSummary.isTeams) {
+        console.log(`📱 ⭐ TEAMS RESPONSE DELIVERED - ${platformSummary.teamsType} ⭐`);
       }
       
     } catch (parseError) {
@@ -461,5 +642,14 @@ https.createServer(httpsOptions, app).listen(PORT, () => {
     console.log('   ⚠️  DEPLOY_NAME: NOT SET (optional)');
   }
 
-  console.log('\n🎯 Azure Llama API Proxy Server ready on HTTPS!\n');
+  console.log('\n🎯 ⭐ ENHANCED PLATFORM DETECTION ACTIVE! ⭐');
+  console.log('📱 Will detect and log:');
+  console.log('   💻 Microsoft Teams Desktop App');
+  console.log('   📱 Microsoft Teams Mobile App');
+  console.log('   🌐 Microsoft Teams Web App');
+  console.log('   🌍 Web Browsers (Chrome, Edge, Firefox, Safari)');
+  console.log('   📱 Mobile Browsers');
+  console.log('   🖥️ Operating Systems (Windows, macOS, Linux, etc.)');
+  console.log('\n🔍 🚨 GUARANTEED PLATFORM DETECTION ON EVERY /api/llama REQUEST! 🚨');
+  console.log('🎯 Azure Llama API Proxy Server ready on HTTPS!\n');
 });

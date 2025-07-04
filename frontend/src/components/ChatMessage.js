@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ThumbsUp, ThumbsDown, Check, FileText, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
-import defaultBotLogo from '../assets/DBD.png';
+import defaultBotLogo from '../assets/dn logo.png'; // Using dn logo.png
+import FeedbackPopover from './FeedbackPopover'; // From chatmessage.js
+
 
 const ChatMessage = ({ 
   message, 
@@ -16,6 +18,16 @@ const ChatMessage = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const isUser = message.role === 'user';
+  const MEMORY_SHOT = parseInt(process.env.REACT_APP_MEMORY_SHOT || '4');
+
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false); // From chatmessage.js
+    const thumbsDownRef = useRef(null); // From chatmessage.js
+  
+    const handleFeedbackSubmit = (text) => {
+      console.log("📩 Feedback received:", text);
+      // Optionally: send to backend or store
+    };
+  
 
   useEffect(() => {
     const detectTeamsContext = () => {
@@ -127,6 +139,26 @@ const ChatMessage = ({
       }
     }
   };
+
+const cleanHtmlContent = (rawHtml) => {
+  if (!rawHtml) return '';
+
+  // Remove outer <html>, <body>, whitespace and add table styling
+  let cleaned = rawHtml
+    .replace(/<\/?(html|body)>/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  
+  // Add styling to tables
+  cleaned = cleaned
+    .replace(/<table>/gi, '<table class="border-collapse border border-gray-300 my-2 w-full">')
+    .replace(/<td>/gi, '<td class="border border-gray-300 px-3 py-2">')
+    .replace(/<th>/gi, '<th class="border border-gray-300 px-3 py-2 bg-gray-50 font-semibold">')
+    .replace(/<tr>/gi, '<tr class="even:bg-gray-50">');
+  
+  return cleaned;
+};
+
 
   const copyForTeams = async (textContent) => {
     try {
@@ -345,9 +377,8 @@ const ChatMessage = ({
               ) : (
 
               <div className="bg-white border border-gray-200 rounded-lg rounded-tl-sm p-3 shadow-sm">
-                <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
-                  {formatContent(message.content)}
-                </div>
+                <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words"
+                  dangerouslySetInnerHTML={{__html: cleanHtmlContent(message.content)}} />
               </div>
             )}
 
@@ -366,9 +397,15 @@ const ChatMessage = ({
                   <ThumbsUp className="w-3.5 h-3.5" />
                 </button>
 
-                <button className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-gray-200" title="Dislike">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
+                 <button
+                                ref={thumbsDownRef}
+                                onClick={() => setIsFeedbackOpen(true)}
+                                className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-gray-200"
+              
+                                title="Dislike"
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
 
                 {message.references && message.references.length > 0 && (
                   <button onClick={handleReferencesClick} data-references-button="true" className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1
@@ -385,6 +422,7 @@ const ChatMessage = ({
           </div>
         </div>
       </div>
+
 
       {imageModalOpen && selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4" onClick={closeImageModal} style={{ zIndex: isTeamsContext ? 99999 : 1000 }}>
@@ -417,6 +455,15 @@ const ChatMessage = ({
           </div>
         </div>
       )}
+      <FeedbackPopover
+        isOpen={isFeedbackOpen}
+        anchorRef={thumbsDownRef}
+        onClose={() => setIsFeedbackOpen(false)}
+        onSubmit={(text) => {
+          console.log("📩 Feedback submitted:", text);
+          // Optional: send to backend
+        }}
+      />
     </>
   );
 };

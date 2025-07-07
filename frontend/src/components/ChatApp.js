@@ -5,7 +5,7 @@ import ChatSidebar from './ChatSidebar';
 import ChatMessage from './ChatMessage';
 import ProfileMenu from './ProfileMenu'; 
 import ReferencesPanel from './ReferencesPanel'; // Using App1.js path
-import CompanyLogo from '../assets/dn_logo.png'; 
+import CompanyLogo from '../assets/DBD_BIG.png'; 
 
 
 const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
@@ -216,6 +216,8 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   // From App2.js, related to ProfileMenu dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -250,6 +252,16 @@ function App({account,logout}) { // Merged App and ChatApp signatures
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isReferencesOpen, closeReferences]);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -316,6 +328,9 @@ function App({account,logout}) { // Merged App and ChatApp signatures
         sessionStorage.setItem('hasVisited', 'true');
     }
   }, [account]);
+  const handleMobileToggle = useCallback((isOpen) => {
+    setIsMobileOpen(isOpen);
+  }, []);
 
   // Debounced localStorage saves (Combined from both)
   useEffect(() => {
@@ -701,6 +716,111 @@ try {
   }, [platformInfo.isTeams]);
 
   // Landing page rendering (Combined from both, prioritizing App1.js structure and styling for landing)
+if (showLanding) {
+  return (
+    <div className={`min-h-screen max-h-screen flex overflow-hidden ${
+      platformInfo.isTeams ? 'bg-white' : 'bg-gradient-to-br from-slate-50 to-blue-50'
+    }`}>
+      {/* Mobile Hamburger Menu */}
+      {isMobile && (
+        <button
+          data-hamburger-menu
+          onClick={() => handleMobileToggle(true)}
+          className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+        >
+          <Menu className="w-5 h-5 text-gray-600" />
+        </button>
+      )}
+
+      {/* Desktop Profile Menu */}
+      {!isMobile && <ProfileMenu account={account} logout={logout}/>}
+
+      {/* Mobile Overlay */}
+      {isMobile && isMobileOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
+      )}
+
+      <ChatSidebar
+        chats={chats}
+        currentChatId={currentChatId}
+        onSelectChat={setCurrentChatId}
+        onNewChat={createNewChat}
+        onDeleteChat={deleteChat}
+        isCollapsed={isMobile ? false : isSidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        isTeams={platformInfo.isTeams}
+        account={account}
+        logout={logout}
+        isMobileOpen={isMobileOpen}
+        onMobileToggle={handleMobileToggle}
+      />
+
+      <div className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
+        platformInfo.isTeams ? 'pt-12' : ''
+      } ${isMobile ? 'pt-20' : ''}`}>
+        <div className="w-full max-w-xl mx-auto">
+          <div className="text-center mb-8">
+            {/* Logo */}
+            <div className="inline-flex items-center justify-center mb-4">
+              <img
+                src={CompanyLogo}
+                alt="Company Logo"
+                className="w-20 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
+              />
+            </div>
+
+            {/* Welcome Message */}
+            <p className="text-gray-600 text-sm sm:text-base px-4">
+              Hello {account?.name || "Guest"}! Welcome to <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-4 sm:mx-0">
+            <div className="flex items-center gap-2 p-3">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Ask me anything to get started..."
+                disabled={isGenerating}
+                className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
+                rows={1}
+                onInput={handleTextareaInput}
+              />
+              <div className="flex items-center gap-2">
+                <div className="max-w-[120px] sm:max-w-xs">
+                  <CompactVersionSelector
+                    selectedProjectVersion={selectedProjectVersion}
+                    onProjectVersionChange={setSelectedProjectVersion}
+                    disabled={isGenerating}
+                  />
+                </div>
+                <button
+                  onClick={isGenerating ? stopGeneration : sendMessage}
+                  disabled={!isGenerating && !input.trim()}
+                  className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
+                    isGenerating
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  {isGenerating ? <Square className="w-3 h-3" /> : <SendHorizontal className="w-3 h-3" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-3 px-4 sm:px-0">
+            <p className="text-xs text-gray-400">
+              {isGenerating ? "AI is generating a response..." : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
   if (showLanding) {
     return (
       <div className={`min-h-screen max-h-screen flex overflow-hidden ${
@@ -790,50 +910,73 @@ try {
   }
 
   // Chat interface rendering (Combined from both)
-  return (
-    <div className={`min-h-screen max-h-screen flex overflow-hidden ${
-      platformInfo.isTeams ? 'bg-white' : 'bg-gray-50' // Used gray-50 from App2, if not Teams
-    } relative`}> {/* Added relative from App2 */}
+return (
+  <div className={`min-h-screen max-h-screen flex overflow-hidden ${
+    platformInfo.isTeams ? 'bg-white' : 'bg-gray-50'
+  } relative`}>
+    
+    {/* Mobile Hamburger Menu */}
+    {isMobile && (
+      <button
+        data-hamburger-menu
+        onClick={() => handleMobileToggle(true)}
+        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+      >
+        <Menu className="w-5 h-5 text-gray-600" />
+      </button>
+    )}
 
-      <ProfileMenu account={account} logout={logout}/> {/* From App2.js */}
+    {/* Desktop Profile Menu */}
+    {!isMobile && <ProfileMenu account={account} logout={logout}/>}
 
-      <ChatSidebar
-        chats={chats}
-        currentChatId={currentChatId}
-        onSelectChat={setCurrentChatId}
-        onNewChat={createNewChat}
-        onDeleteChat={deleteChat}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-        isTeams={platformInfo.isTeams} // From App1.js
-      />
+    {/* Mobile Overlay */}
+    {isMobile && isMobileOpen && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
+    )}
 
-      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300 ${
-        isReferencesOpen ? 'mr-80' : ''
-      }`}>
+    <ChatSidebar
+      chats={chats}
+      currentChatId={currentChatId}
+      onSelectChat={setCurrentChatId}
+      onNewChat={createNewChat}
+      onDeleteChat={deleteChat}
+      isCollapsed={isMobile ? false : isSidebarCollapsed}
+      onToggleCollapse={toggleSidebar}
+      isTeams={platformInfo.isTeams}
+      account={account}
+      logout={logout}
+      isMobileOpen={isMobileOpen}
+      onMobileToggle={handleMobileToggle}
+    />
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0"> {/* Adjusted py-4 from App1.js, px-4 from App2.js */}
-          {currentChat?.messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center max-w-sm">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <MessageSquare className="w-4 h-4 text-blue-600" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">Start a conversation</h3>
-                <p className="text-xs text-gray-500">Ask me anything to get started</p>
+    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300 ${
+      isReferencesOpen ? 'mr-0 lg:mr-80' : ''
+    } ${isMobile ? 'pt-16' : ''}`}>
+
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 min-h-0">
+        {currentChat?.messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center px-4">
+            <div className="text-center max-w-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Start a conversation</h3>
+              <p className="text-sm text-gray-500">Ask me anything to get started with your AI assistant</p>
             </div>
-          ) : (
-            <div className="space-y-6 max-w-4xl mx-auto"> {/* Adjusted space-y-6 and max-w-4xl from App1.js */}
-              {currentChat?.messages.map((message) => (
+          </div>
+        ) : (
+          <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+            {currentChat?.messages.map((message) => (
+              <div key={message.id} className="w-full">
                 <ChatMessage
-                  key={message.id}
                   message={message}
                   onReferencesClick={handleReferencesToggle}
                   isReferencesOpen={isReferencesOpen && selectedMessageReferences?.messageId === message.id}
                 />
-              ))}
-              {isGenerating && (
+              </div>
+            ))}
+            {isGenerating && (
+              <div className="w-full">
                 <ChatMessage
                   message={{
                     id: 'generating',
@@ -842,103 +985,100 @@ try {
                     timestamp: new Date(),
                     images: [],
                     references: [],
-                    model: selectedProjectVersion // Added version to message
+                    model: selectedProjectVersion
                   }}
                   isGenerating={true}
                   onReferencesClick={handleReferencesToggle}
                 />
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Smaller input area, combined from both with platform-specific styles */}
-        <div className={`bg-white border-t border-gray-200 flex-shrink-0 ${
-          platformInfo.isTeams ? 'px-3 py-2' : 'px-4 py-3'
-        }`}>
-          <div className="max-w-4xl mx-auto">
-            <div className={`bg-gray-50 rounded-lg border border-gray-200 overflow-hidden ${
-              platformInfo.isTeams ? 'rounded-md' : ''
-            }`}>
-              <div className={`flex items-center gap-2 ${
-                platformInfo.isTeams ? 'p-2' : 'p-3'
-              }`}>
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask me anything..."
-                  disabled={isGenerating}
-                  className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 ${
-                    platformInfo.isTeams ? 'max-h-12 text-xs' : 'max-h-24 text-sm' // Max height 24 from App2, but min-h is 20 for Teams
-                  }`}
-                  rows={1}
-                  onInput={handleTextareaInput}
-                />
-                <div className="flex items-center gap-2">
-                  <div className={platformInfo.isTeams ? 'max-w-[150px]' : 'max-w-xs'}>
-                    <CompactVersionSelector
-                      selectedProjectVersion={selectedProjectVersion}
-                      onProjectVersionChange={setSelectedProjectVersion}
-                      disabled={isGenerating}
-                    />
-                  </div>
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center text-white rounded-md transition-all duration-200 flex-shrink-0 ${
-                      platformInfo.isTeams
-                        ? 'w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                        : 'w-8 h-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed' // From App2 w-8 h-8
-                    } ${
-                      isGenerating
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : ''
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <Square className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} /> // Changed to w-4 h-4 from App2
-                    ) : (
-                      <SendHorizontal className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} /> // Changed to w-4 h-4 from App2
-                    )}
-                  </button>
-                </div>
               </div>
-            </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
 
-            {/* Bottom status bar with platform info - centered disclaimer */}
-            <div className={`flex items-center justify-between ${
-              platformInfo.isTeams ? 'mt-1' : 'mt-2'
+      {/* Input area */}
+      <div className={`bg-white border-t border-gray-200 flex-shrink-0 ${
+        platformInfo.isTeams ? 'px-2 sm:px-3 py-2' : 'px-2 sm:px-4 py-3'
+      }`}>
+        <div className="max-w-4xl mx-auto">
+          <div className={`bg-gray-50 rounded-lg border border-gray-200 overflow-hidden ${
+            platformInfo.isTeams ? 'rounded-md' : ''
+          }`}>
+            <div className={`flex items-center gap-2 ${
+              platformInfo.isTeams ? 'p-2' : 'p-3'
             }`}>
-              {/* <div className="w-20">
-                <PlatformIndicator platform={platformInfo} />
-              </div> */}
-              <div className="flex-1 text-center">
-                <p className={`text-gray-400 ${
-                  platformInfo.isTeams ? 'text-[10px]' : 'text-xs'
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Ask me anything..."
+                disabled={isGenerating}
+                className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 ${
+                  platformInfo.isTeams ? 'max-h-12 text-xs' : 'max-h-24 text-sm'
+                }`}
+                rows={1}
+                onInput={handleTextareaInput}
+              />
+              <div className="flex items-center gap-2">
+                <div className={`${
+                  platformInfo.isTeams ? 'max-w-[120px]' : 'max-w-[140px] sm:max-w-xs'
                 }`}>
-                  {isGenerating
-                    ? "AI is generating a response..."
-                    : ""
-                  }
-                </p>
+                  <CompactVersionSelector
+                    selectedProjectVersion={selectedProjectVersion}
+                    onProjectVersionChange={setSelectedProjectVersion}
+                    disabled={isGenerating}
+                  />
+                </div>
+                <button
+                  onClick={isGenerating ? stopGeneration : sendMessage}
+                  disabled={!isGenerating && !input.trim()}
+                  className={`flex items-center justify-center text-white rounded-md transition-all duration-200 flex-shrink-0 ${
+                    platformInfo.isTeams
+                      ? 'w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                      : 'w-8 h-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                  } ${
+                    isGenerating
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : ''
+                  }`}
+                >
+                  {isGenerating ? (
+                    <Square className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} />
+                  ) : (
+                    <SendHorizontal className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} />
+                  )}
+                </button>
               </div>
+            </div>
+          </div>
+
+          {/* Bottom status bar */}
+          <div className={`flex items-center justify-center ${
+            platformInfo.isTeams ? 'mt-1' : 'mt-2'
+          }`}>
+            <div className="text-center">
+              <p className={`text-gray-400 ${
+                platformInfo.isTeams ? 'text-[10px]' : 'text-xs'
+              }`}>
+                {isGenerating ? "AI is generating a response..." : ""}
+              </p>
             </div>
           </div>
         </div>
       </div>
-
-      <div ref={referencePanelRef}>
-        <ReferencesPanel
-          isOpen={isReferencesOpen}
-          references={selectedMessageReferences?.references || []}
-          onClose={closeReferences}
-        />
-      </div>
     </div>
-  );
+
+    <div ref={referencePanelRef} className="hidden lg:block">
+      <ReferencesPanel
+        isOpen={isReferencesOpen}
+        references={selectedMessageReferences?.references || []}
+        onClose={closeReferences}
+      />
+    </div>
+  </div>
+);
 }
 
 export default App;

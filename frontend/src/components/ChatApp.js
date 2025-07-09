@@ -22,38 +22,81 @@ import ReferencesPanel from "./ReferencesPanel"; // Using App1.js path
 import CompanyLogo from "../assets/DBD_BIG.png";
 
 const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
-const ENV_CLIENT = process.env.REACT_APP_CLIENT;
 const API_BASE = process.env.REACT_APP_API_URL;
-const DUMMY_URL = process.env.REACT_APP_DUMMY_URL; // Re-declare or ensure available
 
 // VERSIONS_AVAILABLE from App1.js (renamed from AI_MODELS)
-const VERSIONS_AVAILABLE = [
-  { id: "v4.2", name: "v4.2" },
-  { id: "v4.1", name: "v4.1" },
-  { id: "v4.1_maintenance", name: "v4.1 Maintenance" },
-  { id: "v4.0", name: "v4.0" },
-  { id: "v4.0_maintenance", name: "v4.0 Maintenance" },
-  { id: "v3.4", name: "v3.4" },
-  { id: "v3.4_maintenance", name: "v3.4 Maintenance" },
-];
+// Replace the existing VERSIONS_AVAILABLE array with this:
+// Replace the existing getVersionsFromEnv function with this improved version:
 
-// DeleteIcon component from App2.js (though not explicitly used in the final JSX)
-const DeleteIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-3 h-3"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
+const getVersionsFromEnv = () => {
+  const versionsString = process.env.REACT_APP_AVAILABLE_VERSIONS;
+  
+  console.log('Raw environment variable:', versionsString);
+  
+  if (!versionsString || versionsString.trim() === '') {
+    console.log('No versions string found, returning empty array');
+    return [];
+  }
+  
+  try {
+    // Clean the string by removing line breaks, extra spaces, and fix common formatting issues
+    let cleanedString = versionsString.replace(/\s+/g, ' ').trim();
+    
+    // Ensure the string is properly closed if it's missing the closing bracket
+    if (cleanedString.startsWith('[') && !cleanedString.endsWith(']')) {
+      cleanedString += ']';
+    }
+    
+    console.log('Cleaned string:', cleanedString);
+    
+    // Parse as JSON
+    const parsed = JSON.parse(cleanedString);
+    console.log('Parsed JSON:', parsed);
+    
+    // Ensure it's an array
+    if (!Array.isArray(parsed)) {
+      console.warn('Parsed versions is not an array:', parsed);
+      return [];
+    }
+    
+    // Map to the expected format
+    const result = parsed.map(item => {
+      if (!item.id || !item.version) {
+        console.warn('Invalid version item:', item);
+        return null;
+      }
+      return {
+        id: item.id,
+        name: item.version // Map 'version' field to 'name' for consistency
+      };
+    }).filter(Boolean); // Remove null entries
+    
+    console.log('Final result:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('Error parsing REACT_APP_AVAILABLE_VERSIONS:', error);
+    console.error('Raw string that failed:', versionsString);
+    
+    // Fallback: try to extract versions manually if JSON parsing fails
+    try {
+      const matches = versionsString.match(/"id":"([^"]+)","version":"([^"]+)"/g);
+      if (matches) {
+        const fallbackResult = matches.map(match => {
+          const [, id, version] = match.match(/"id":"([^"]+)","version":"([^"]+)"/);
+          return { id, name: version };
+        });
+        console.log('Fallback parsing result:', fallbackResult);
+        return fallbackResult;
+      }
+    } catch (fallbackError) {
+      console.error('Fallback parsing also failed:', fallbackError);
+    }
+    
+    return [];
+  }
+};
+const VERSIONS_AVAILABLE = getVersionsFromEnv();
 
 // Simplified platform detection from App1.js
 const detectPlatform = () => {
@@ -92,31 +135,6 @@ const detectPlatform = () => {
   };
 };
 
-// Platform indicator component from App1.js
-const PlatformIndicator = ({ platform }) => {
-  if (!platform) return null;
-
-  const getIcon = () => {
-    switch (platform.icon) {
-      case "teams":
-        return MessageSquare;
-      case "web":
-        return Globe;
-      default:
-        return Globe;
-    }
-  };
-
-  const IconComponent = getIcon();
-
-  return (
-    <div className="flex items-center gap-1 text-xs text-gray-400">
-      <IconComponent className="w-3 h-3" />
-      {platform.platform}
-    </div>
-  );
-};
-
 // Compact Version Selector Component from App1.js (props updated)
 const CompactVersionSelector = ({
   selectedProjectVersion,
@@ -125,7 +143,6 @@ const CompactVersionSelector = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyles, setDropdownStyles] = useState({});
-  const [openDirection, setOpenDirection] = useState("bottom"); // Kept for logic, but not directly used in styling here
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -161,8 +178,6 @@ const CompactVersionSelector = ({
       const shouldOpenAbove =
         spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
 
-      setOpenDirection(shouldOpenAbove ? "top" : "bottom"); // State kept for potential future styling
-
       setDropdownStyles({
         position: "absolute",
         top: shouldOpenAbove
@@ -174,6 +189,11 @@ const CompactVersionSelector = ({
       });
     }
   }, [isOpen]);
+
+  // Add this check after all hooks are declared
+  if (VERSIONS_AVAILABLE.length === 0) {
+    return null; // Don't render anything if no versions available
+  }
 
   const selectedVersionData =
     VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) ||
@@ -192,7 +212,7 @@ const CompactVersionSelector = ({
         >
           <div className="flex items-center gap-2">
             <Settings className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-gray-700 whitespace-nowrap">
+            <span className="font-small text-gray-700 whitespace-nowrap">
               {selectedVersionData.name}
             </span></div>
           <ChevronDown
@@ -252,8 +272,10 @@ function App({ account, logout }) {
     useState(null);
   const [abortController, setAbortController] = useState(null);
 
-  // Consolidated state for project version, initialized to 'v4.2'
-  const [selectedProjectVersion, setSelectedProjectVersion] = useState("v4.2");
+    const [selectedProjectVersion, setSelectedProjectVersion] = useState(() => {
+    // Default to first version if available, otherwise empty string
+      return VERSIONS_AVAILABLE.length > 0 ? VERSIONS_AVAILABLE[0].id : '';
+    });
   const [traceId, setTraceId] = useState(""); // From App2.js
 
   // From App2.js, related to ProfileMenu dropdown
@@ -375,9 +397,11 @@ function App({ account, logout }) {
       if (savedSidebarState) {
         setIsSidebarCollapsed(JSON.parse(savedSidebarState));
       }
-      if (savedProjectVersion) {
-        // Set saved version
+      // In the localStorage loading useEffect, replace the savedProjectVersion section:
+      if (savedProjectVersion && VERSIONS_AVAILABLE.some(v => v.id === savedProjectVersion)) {
         setSelectedProjectVersion(savedProjectVersion);
+      } else if (VERSIONS_AVAILABLE.length > 0) {
+        setSelectedProjectVersion(VERSIONS_AVAILABLE[0].id);
       }
     } catch (err) {
       console.error("Failed to load from localStorage:", err);
@@ -705,7 +729,9 @@ function App({ account, logout }) {
       console.log("🚀 Final Payload to Backend:", payload);
 
       const response = await fetch(
-        `${API_BASE}/chat/${ENV_PROJECT}/${selectedProjectVersion}`,
+        VERSIONS_AVAILABLE.length > 0 
+          ? `${API_BASE}/chat/${ENV_PROJECT}/${selectedProjectVersion}`
+          : `${API_BASE}/chat/${ENV_PROJECT}`,
         {
           // Using App2.js API endpoint
           method: "POST",
@@ -1057,12 +1083,16 @@ function App({ account, logout }) {
                   rows={1}
                   onInput={handleTextareaInput}
                 />
-                <div className="flex items-center gap-2">
-                  <CompactVersionSelector
-                    selectedProjectVersion={selectedProjectVersion}
-                    onProjectVersionChange={setSelectedProjectVersion}
-                    disabled={isGenerating}
-                  />
+              <div className="flex items-center gap-2">
+                {VERSIONS_AVAILABLE.length > 0 && (
+                  <div className="min-w-fit max-w-none">
+                    <CompactVersionSelector
+                      selectedProjectVersion={selectedProjectVersion}
+                      onProjectVersionChange={setSelectedProjectVersion}
+                      disabled={isGenerating}
+                    />
+                  </div>
+                )}
                   <button
                     onClick={isGenerating ? stopGeneration : sendMessage}
                     disabled={!isGenerating && !input.trim()}
@@ -1222,19 +1252,21 @@ function App({ account, logout }) {
                   onInput={handleTextareaInput}
                 />
                 <div className="flex items-center gap-1.5">
-                  <div
-                    className={`${
-                      platformInfo.isTeams
-                        ? "max-w-[100px]"
-                        : "max-w-[120px] sm:max-w-[140px]"
-                    }`}
-                  >
-                    <CompactVersionSelector
-                      selectedProjectVersion={selectedProjectVersion}
-                      onProjectVersionChange={setSelectedProjectVersion}
-                      disabled={isGenerating}
-                    />
-                  </div>
+                {VERSIONS_AVAILABLE.length > 0 && (
+                    <div
+                      className={`${
+                        platformInfo.isTeams
+                          ? "max-w-[100px]"
+                          : "max-w-[120px] sm:max-w-[140px]"
+                      }`}
+                    >
+                      <CompactVersionSelector
+                        selectedProjectVersion={selectedProjectVersion}
+                        onProjectVersionChange={setSelectedProjectVersion}
+                        disabled={isGenerating}
+                      />
+                    </div>
+                  )}
                   <button
                     onClick={isGenerating ? stopGeneration : sendMessage}
                     disabled={!isGenerating && !input.trim()}

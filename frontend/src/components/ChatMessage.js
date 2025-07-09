@@ -18,7 +18,7 @@ const ChatMessage = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const isUser = message.role === 'user';
-  const MEMORY_SHOT = parseInt(process.env.REACT_APP_MEMORY_SHOT || '4');
+  const MEMORY_SHOT = parseInt(process.env.REACT_APP_MEMORY_SHOT || '1');
 
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false); // From chatmessage.js
     const thumbsDownRef = useRef(null); // From chatmessage.js

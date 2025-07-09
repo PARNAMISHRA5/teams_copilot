@@ -135,22 +135,59 @@ const detectPlatform = () => {
   };
 };
 
+
 // Compact Version Selector Component from App1.js (props updated)
+
 const CompactVersionSelector = ({
   selectedProjectVersion,
   onProjectVersionChange,
   disabled,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [dropdownStyles, setDropdownStyles] = useState({});
-  const buttonRef = useRef(null);
+  const containerRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && !isMobile && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = Math.min(240, VERSIONS_AVAILABLE.length * 44 + 60);
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      let top;
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        // Open upward
+        top = rect.top + window.scrollY - dropdownHeight - 8;
+      } else {
+        // Open downward
+        top = rect.bottom + window.scrollY + 4;
+      }
+
+      setDropdownStyles({
+        position: 'absolute',
+        top: `${top}px`,
+        left: `${rect.left + window.scrollX}px`,
+        width: `${rect.width}px`,
+        zIndex: 9999,
+        maxHeight: `${Math.min(dropdownHeight, Math.max(spaceBelow, spaceAbove) - 20)}px`,
+      });
+    }
+  }, [isOpen, isMobile]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target) &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target) &&
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target)
       ) {
@@ -159,102 +196,138 @@ const CompactVersionSelector = ({
     };
 
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownHeight = 240; // estimated height of dropdown
-
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-
-      const shouldOpenAbove =
-        spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
-
-      setDropdownStyles({
-        position: "absolute",
-        top: shouldOpenAbove
-          ? rect.top + window.scrollY - dropdownHeight - 8
-          : rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        zIndex: 99999,
-      });
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
-  }, [isOpen]);
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobile, isOpen]);
 
-  // Add this check after all hooks are declared
-  if (VERSIONS_AVAILABLE.length === 0) {
-    return null; // Don't render anything if no versions available
-  }
+  if (VERSIONS_AVAILABLE.length === 0) return null;
 
   const selectedVersionData =
-    VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) ||
-    VERSIONS_AVAILABLE[0];
+    VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) || VERSIONS_AVAILABLE[0];
+
+  const handleVersionSelect = (versionId) => {
+    onProjectVersionChange(versionId);
+    setIsOpen(false);
+  };
+
+  const dropdownContent = (
+    <div
+      ref={dropdownRef}
+      style={dropdownStyles}
+      className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+    >
+      <div className="p-2">
+        <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
+          Select Project Version
+        </div>
+        <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 40px)' }}>
+          {VERSIONS_AVAILABLE.map((version) => (
+            <button
+              key={version.id}
+              onClick={() => handleVersionSelect(version.id)}
+              className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
+                selectedProjectVersion === version.id
+                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  : 'text-gray-700'
+              }`}
+            >
+              <div className="font-medium text-sm">{version.name}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <>
-      <div className="relative w-full" ref={buttonRef}>
-        <button
-          onClick={() => !disabled && setIsOpen((prev) => !prev)}
-          disabled={disabled}
-          className={`w-full flex items-center justify-between gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
-            disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        } ${isOpen ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+        title={`Current version: ${selectedVersionData.name}`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Settings className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <span className="text-gray-700 font-medium truncate">
+            {selectedVersionData.name}
+          </span>
+        </div>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+            isOpen ? 'rotate-180' : ''
           }`}
-          title={`Current version: ${selectedVersionData.name}`}
-        >
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-gray-500" />
-            <span className="font-small text-gray-700 whitespace-nowrap">
-              {selectedVersionData.name}
-            </span></div>
-          <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      </div>
-      {isOpen &&
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={dropdownStyles}
-            className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-[240px] overflow-y-auto"
-          >
-            <div className="p-2">
-              <div className="text-xs font-semibold text-gray-500 px-2 py-1">
-                Select Project Version
+        />
+      </button>
+
+      {isOpen && (
+        <>
+          {isMobile ? (
+            <>
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
+              <div
+                ref={dropdownRef}
+                className="fixed inset-x-4 bottom-4 top-auto z-50 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+                style={{ maxHeight: '60vh' }}
+              >
+                <div className="flex justify-center py-2 border-b border-gray-200">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full" />
+                </div>
+                <div className="p-2">
+                  <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
+                    Select Project Version
+                  </div>
+                  <div className="overflow-y-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
+                    {VERSIONS_AVAILABLE.map((version) => (
+                      <button
+                        key={version.id}
+                        onClick={() => handleVersionSelect(version.id)}
+                        className={`w-full text-left px-3 py-3 rounded-md hover:bg-gray-50 transition-colors ${
+                          selectedProjectVersion === version.id
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{version.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="w-full py-3 text-center text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              {VERSIONS_AVAILABLE.map((version) => (
-                <button
-                  key={version.id}
-                  onClick={() => {
-                    onProjectVersionChange(version.id);
-                    console.log("Version changed to:", version.id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
-                    selectedProjectVersion === version.id
-                      ? "bg-blue-50 text-blue-700"
-                      : ""
-                  }`}
-                >
-                  <div className="font-medium text-sm">{version.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>,
-          document.body
-        )}
-    </>
+            </>
+          ) : (
+            createPortal(dropdownContent, document.body)
+          )}
+        </>
+      )}
+    </div>
   );
 };
 

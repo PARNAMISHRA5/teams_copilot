@@ -940,7 +940,7 @@ function App({ account, logout }) {
                 <img
                   src={CompanyLogo}
                   alt="Company Logo"
-                  className="w-20 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
+                  className="w-12 h-12 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
                 />
               </div>
 
@@ -1149,7 +1149,7 @@ function App({ account, logout }) {
                   Start a conversation
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Ask me anything to get started with your AI assistant
+                  Ask me anything reagrding TM Documentation
                 </p>
               </div>
             </div>

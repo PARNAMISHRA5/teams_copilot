@@ -1,12 +1,25 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { SendHorizontal, Plus, MessageSquare, Sparkles, Menu, Square, Monitor, Smartphone, Globe, ChevronDown, Settings, Dna, Asterisk } from 'lucide-react';
-import ChatSidebar from './ChatSidebar';
-import ChatMessage from './ChatMessage';
-import ProfileMenu from './ProfileMenu'; 
-import ReferencesPanel from './ReferencesPanel'; // Using App1.js path
-import CompanyLogo from '../assets/DBD_BIG.png'; 
-
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import {
+  SendHorizontal,
+  Plus,
+  MessageSquare,
+  Sparkles,
+  Menu,
+  Square,
+  Monitor,
+  Smartphone,
+  Globe,
+  ChevronDown,
+  Settings,
+  Dna,
+  Asterisk,
+} from "lucide-react";
+import ChatSidebar from "./ChatSidebar";
+import ChatMessage from "./ChatMessage";
+import ProfileMenu from "./ProfileMenu";
+import ReferencesPanel from "./ReferencesPanel"; // Using App1.js path
+import CompanyLogo from "../assets/DBD_BIG.png";
 
 const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
 const ENV_CLIENT = process.env.REACT_APP_CLIENT;
@@ -15,19 +28,30 @@ const DUMMY_URL = process.env.REACT_APP_DUMMY_URL; // Re-declare or ensure avail
 
 // VERSIONS_AVAILABLE from App1.js (renamed from AI_MODELS)
 const VERSIONS_AVAILABLE = [
-  { id: 'v4.2', name: 'v4.2' },
-  { id: 'v4.1', name: 'v4.1' },
-  { id: 'v4.1_maintenance', name: 'v4.1 Maintenance' },
-  { id: 'v4.0', name: 'v4.0' },
-  { id: 'v4.0_maintenance', name: 'v4.0 Maintenance' },
-  { id: 'v3.4', name: 'v3.4' },
-  { id: 'v3.4_maintenance', name: 'v3.4 Maintenance' }
+  { id: "v4.2", name: "v4.2" },
+  { id: "v4.1", name: "v4.1" },
+  { id: "v4.1_maintenance", name: "v4.1 Maintenance" },
+  { id: "v4.0", name: "v4.0" },
+  { id: "v4.0_maintenance", name: "v4.0 Maintenance" },
+  { id: "v3.4", name: "v3.4" },
+  { id: "v3.4_maintenance", name: "v3.4 Maintenance" },
 ];
 
 // DeleteIcon component from App2.js (though not explicitly used in the final JSX)
 const DeleteIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-3 h-3"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 18L18 6M6 6l12 12"
+    />
   </svg>
 );
 
@@ -35,35 +59,36 @@ const DeleteIcon = () => (
 const detectPlatform = () => {
   const userAgent = navigator.userAgent.toLowerCase();
 
-  const isInTeams = window.location.href.includes('teams.microsoft.com') ||
-                   window.parent !== window ||
-                   userAgent.includes('teams');
+  const isInTeams =
+    window.location.href.includes("teams.microsoft.com") ||
+    window.parent !== window ||
+    userAgent.includes("teams");
 
   if (isInTeams) {
     return {
-      source: 'Microsoft Teams',
-      platform: 'Teams',
-      icon: 'teams',
-      isTeams: true
+      source: "Microsoft Teams",
+      platform: "Teams",
+      icon: "teams",
+      isTeams: true,
     };
   }
 
-  let browser = 'Unknown';
-  if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
-    browser = 'Chrome';
-  } else if (userAgent.includes('firefox')) {
-    browser = 'Firefox';
-  } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-    browser = 'Safari';
-  } else if (userAgent.includes('edg')) {
-    browser = 'Edge';
+  let browser = "Unknown";
+  if (userAgent.includes("chrome") && !userAgent.includes("edg")) {
+    browser = "Chrome";
+  } else if (userAgent.includes("firefox")) {
+    browser = "Firefox";
+  } else if (userAgent.includes("safari") && !userAgent.includes("chrome")) {
+    browser = "Safari";
+  } else if (userAgent.includes("edg")) {
+    browser = "Edge";
   }
 
   return {
-    source: 'Web Browser',
+    source: "Web Browser",
     platform: browser,
-    icon: 'web',
-    isTeams: false
+    icon: "web",
+    isTeams: false,
   };
 };
 
@@ -73,9 +98,12 @@ const PlatformIndicator = ({ platform }) => {
 
   const getIcon = () => {
     switch (platform.icon) {
-      case 'teams': return MessageSquare;
-      case 'web': return Globe;
-      default: return Globe;
+      case "teams":
+        return MessageSquare;
+      case "web":
+        return Globe;
+      default:
+        return Globe;
     }
   };
 
@@ -90,10 +118,14 @@ const PlatformIndicator = ({ platform }) => {
 };
 
 // Compact Version Selector Component from App1.js (props updated)
-const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange, disabled }) => {
+const CompactVersionSelector = ({
+  selectedProjectVersion,
+  onProjectVersionChange,
+  disabled,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyles, setDropdownStyles] = useState({});
-  const [openDirection, setOpenDirection] = useState('bottom'); // Kept for logic, but not directly used in styling here
+  const [openDirection, setOpenDirection] = useState("bottom"); // Kept for logic, but not directly used in styling here
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -110,11 +142,11 @@ const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
@@ -126,23 +158,26 @@ const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      const shouldOpenAbove = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+      const shouldOpenAbove =
+        spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
 
-      setOpenDirection(shouldOpenAbove ? 'top' : 'bottom'); // State kept for potential future styling
+      setOpenDirection(shouldOpenAbove ? "top" : "bottom"); // State kept for potential future styling
 
       setDropdownStyles({
-        position: 'absolute',
+        position: "absolute",
         top: shouldOpenAbove
           ? rect.top + window.scrollY - dropdownHeight - 8
           : rect.bottom + window.scrollY + 4,
         left: rect.left + window.scrollX,
         width: rect.width,
-        zIndex: 99999
+        zIndex: 99999,
       });
     }
   }, [isOpen]);
 
-  const selectedVersionData = VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) || VERSIONS_AVAILABLE[0];
+  const selectedVersionData =
+    VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) ||
+    VERSIONS_AVAILABLE[0];
 
   return (
     <>
@@ -151,20 +186,22 @@ const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
           disabled={disabled}
           className={`w-full flex items-center justify-between gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
-            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
           }`}
           title={`Current version: ${selectedVersionData.name}`}
         >
           <div className="flex items-center gap-2">
             <Settings className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-gray-700 truncate max-w-[120px]">{selectedVersionData.name}</span>
-          </div>
+            <span className="font-medium text-gray-700 whitespace-nowrap">
+              {selectedVersionData.name}
+            </span></div>
           <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-gray-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </button>
       </div>
-
       {isOpen &&
         createPortal(
           <div
@@ -173,17 +210,21 @@ const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange
             className="bg-white border border-gray-200 rounded-lg shadow-xl max-h-[240px] overflow-y-auto"
           >
             <div className="p-2">
-              <div className="text-xs font-semibold text-gray-500 px-2 py-1">Select Project Version</div>
+              <div className="text-xs font-semibold text-gray-500 px-2 py-1">
+                Select Project Version
+              </div>
               {VERSIONS_AVAILABLE.map((version) => (
                 <button
                   key={version.id}
                   onClick={() => {
                     onProjectVersionChange(version.id);
-                    console.log('Version changed to:', version.id);
+                    console.log("Version changed to:", version.id);
                     setIsOpen(false);
                   }}
                   className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
-                    selectedProjectVersion === version.id ? 'bg-blue-50 text-blue-700' : ''
+                    selectedProjectVersion === version.id
+                      ? "bg-blue-50 text-blue-700"
+                      : ""
                   }`}
                 >
                   <div className="font-medium text-sm">{version.name}</div>
@@ -197,21 +238,23 @@ const CompactVersionSelector = ({ selectedProjectVersion, onProjectVersionChange
   );
 };
 
-function App({account,logout}) { // Merged App and ChatApp signatures
+function App({ account, logout }) {
+  // Merged App and ChatApp signatures
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [hasResetToLanding, setHasResetToLanding] = useState(false); // From App2, but renamed to hasResetToLanding for clarity
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isReferencesOpen, setIsReferencesOpen] = useState(false);
-  const [selectedMessageReferences, setSelectedMessageReferences] = useState(null);
+  const [selectedMessageReferences, setSelectedMessageReferences] =
+    useState(null);
   const [abortController, setAbortController] = useState(null);
 
   // Consolidated state for project version, initialized to 'v4.2'
-  const [selectedProjectVersion, setSelectedProjectVersion] = useState('v4.2');
-  const [traceId, setTraceId] = useState(''); // From App2.js
+  const [selectedProjectVersion, setSelectedProjectVersion] = useState("v4.2");
+  const [traceId, setTraceId] = useState(""); // From App2.js
 
   // From App2.js, related to ProfileMenu dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -223,12 +266,12 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   const inputRef = useRef(null);
   const referencePanelRef = useRef(null);
 
-  const currentChat = chats.find(chat => chat.id === currentChatId);
+  const currentChat = chats.find((chat) => chat.id === currentChatId);
   const showLanding = !currentChatId;
   const platformInfo = detectPlatform(); // From App1.js
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   const closeReferences = useCallback(() => {
@@ -239,8 +282,14 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   // Handle click outside to close references panel (Combined from both, logic is similar)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isReferencesOpen && referencePanelRef.current && !referencePanelRef.current.contains(event.target)) {
-        const isReferencesButton = event.target.closest('[data-references-button]');
+      if (
+        isReferencesOpen &&
+        referencePanelRef.current &&
+        !referencePanelRef.current.contains(event.target)
+      ) {
+        const isReferencesButton = event.target.closest(
+          "[data-references-button]"
+        );
         if (!isReferencesButton) {
           closeReferences();
         }
@@ -248,8 +297,9 @@ function App({account,logout}) { // Merged App and ChatApp signatures
     };
 
     if (isReferencesOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isReferencesOpen, closeReferences]);
   useEffect(() => {
@@ -259,8 +309,8 @@ function App({account,logout}) { // Merged App and ChatApp signatures
         setIsMobileOpen(false);
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -274,35 +324,45 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   // Combined and optimized localStorage operations (Prioritizing App2.js's robust logic, adding App1.js's selectedModel)
   useEffect(() => {
     if (!account) {
-        setCurrentChatId(null);
-        sessionStorage.removeItem('hasVisited');
-        return;
+      setCurrentChatId(null);
+      sessionStorage.removeItem("hasVisited");
+      return;
     }
 
-    const isFirstLoadOfSession = sessionStorage.getItem("hasVisited") !== "true";
+    const isFirstLoadOfSession =
+      sessionStorage.getItem("hasVisited") !== "true";
 
     try {
-      const savedChats = localStorage.getItem('teams-copilot-chats');
-      const savedCurrentChatId = localStorage.getItem('teams-copilot-current-chat');
-      const savedSidebarState = localStorage.getItem('teams-copilot-sidebar-collapsed');
-      const savedProjectVersion = localStorage.getItem('teams-copilot-selected-project-version'); // Updated key
+      const savedChats = localStorage.getItem("teams-copilot-chats");
+      const savedCurrentChatId = localStorage.getItem(
+        "teams-copilot-current-chat"
+      );
+      const savedSidebarState = localStorage.getItem(
+        "teams-copilot-sidebar-collapsed"
+      );
+      const savedProjectVersion = localStorage.getItem(
+        "teams-copilot-selected-project-version"
+      ); // Updated key
 
       if (savedChats) {
-        const parsedChats = JSON.parse(savedChats).map(chat => ({
+        const parsedChats = JSON.parse(savedChats).map((chat) => ({
           ...chat,
           createdAt: new Date(chat.createdAt),
           updatedAt: new Date(chat.updatedAt),
-          messages: chat.messages.map(msg => ({
+          messages: chat.messages.map((msg) => ({
             ...msg,
             timestamp: new Date(msg.timestamp),
-          }))
+          })),
         }));
         setChats(parsedChats);
 
         if (isFirstLoadOfSession) {
           setCurrentChatId(null);
         } else {
-          if (savedCurrentChatId && parsedChats.find(c => c.id === savedCurrentChatId)) {
+          if (
+            savedCurrentChatId &&
+            parsedChats.find((c) => c.id === savedCurrentChatId)
+          ) {
             setCurrentChatId(savedCurrentChatId);
           } else {
             setCurrentChatId(null);
@@ -315,17 +375,18 @@ function App({account,logout}) { // Merged App and ChatApp signatures
       if (savedSidebarState) {
         setIsSidebarCollapsed(JSON.parse(savedSidebarState));
       }
-      if (savedProjectVersion) { // Set saved version
+      if (savedProjectVersion) {
+        // Set saved version
         setSelectedProjectVersion(savedProjectVersion);
       }
     } catch (err) {
-      console.error('Failed to load from localStorage:', err);
+      console.error("Failed to load from localStorage:", err);
       setCurrentChatId(null);
     }
 
     setHasInitialized(true);
     if (account) {
-        sessionStorage.setItem('hasVisited', 'true');
+      sessionStorage.setItem("hasVisited", "true");
     }
   }, [account]);
   const handleMobileToggle = useCallback((isOpen) => {
@@ -336,18 +397,30 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   useEffect(() => {
     if (hasInitialized) {
       const timer = setTimeout(() => {
-        localStorage.setItem('teams-copilot-chats', JSON.stringify(chats));
-        localStorage.setItem('teams-copilot-selected-project-version', selectedProjectVersion); // Updated key
-        localStorage.setItem('teams-copilot-sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+        localStorage.setItem("teams-copilot-chats", JSON.stringify(chats));
+        localStorage.setItem(
+          "teams-copilot-selected-project-version",
+          selectedProjectVersion
+        ); // Updated key
+        localStorage.setItem(
+          "teams-copilot-sidebar-collapsed",
+          JSON.stringify(isSidebarCollapsed)
+        );
         if (currentChatId) {
-          localStorage.setItem('teams-copilot-current-chat', currentChatId);
+          localStorage.setItem("teams-copilot-current-chat", currentChatId);
         } else {
-          localStorage.removeItem('teams-copilot-current-chat');
+          localStorage.removeItem("teams-copilot-current-chat");
         }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [chats, selectedProjectVersion, isSidebarCollapsed, currentChatId, hasInitialized]);
+  }, [
+    chats,
+    selectedProjectVersion,
+    isSidebarCollapsed,
+    currentChatId,
+    hasInitialized,
+  ]);
 
   // Handle outside click for ProfileMenu dropdown (from App2.js)
   useEffect(() => {
@@ -361,62 +434,84 @@ function App({account,logout}) { // Merged App and ChatApp signatures
   }, []);
 
   const toggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed(prev => !prev);
+    setIsSidebarCollapsed((prev) => !prev);
   }, []);
 
-  const handleReferencesToggle = useCallback((messageId, references) => {
-    if (isReferencesOpen && selectedMessageReferences?.messageId === messageId) {
-      closeReferences();
-    } else {
-      setSelectedMessageReferences({ messageId, references });
-      setIsReferencesOpen(true);
-    }
-  }, [isReferencesOpen, selectedMessageReferences?.messageId, closeReferences]);
+  const handleReferencesToggle = useCallback(
+    (messageId, references) => {
+      if (
+        isReferencesOpen &&
+        selectedMessageReferences?.messageId === messageId
+      ) {
+        closeReferences();
+      } else {
+        setSelectedMessageReferences({ messageId, references });
+        setIsReferencesOpen(true);
+      }
+    },
+    [isReferencesOpen, selectedMessageReferences?.messageId, closeReferences]
+  );
 
   const createNewChat = useCallback(() => {
     const newChat = {
       id: Date.now().toString(),
-      title: 'New Chat',
+      title: "New Chat",
       messages: [],
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    setChats(prev => [newChat, ...prev]);
+    setChats((prev) => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
   }, []);
 
   const generateChatTitle = useCallback((chat) => {
-    if (!chat.messages?.length) return 'New Chat';
+    if (!chat.messages?.length) return "New Chat";
 
-    const greetings = ['hi', 'hello', 'hey', 'thanks', 'ok', 'yes', 'no'];
+    const greetings = ["hi", "hello", "hey", "thanks", "ok", "yes", "no"];
     const isGreetingMessage = (text) => {
-      const cleanText = text.replace(/[.,!?;:]+$/, '').trim().toLowerCase();
-      return greetings.some(greet =>
-        cleanText === greet || cleanText.startsWith(greet + ' ') || cleanText.length <= 3
+      const cleanText = text
+        .replace(/[.,!?;:]+$/, "")
+        .trim()
+        .toLowerCase();
+      return greetings.some(
+        (greet) =>
+          cleanText === greet ||
+          cleanText.startsWith(greet + " ") ||
+          cleanText.length <= 3
       );
     };
 
-    const firstValidUserMessage = chat.messages.find(msg =>
-      msg.role === 'user' && msg.content?.trim() &&
-      !isGreetingMessage(msg.content) && msg.content.length >= 4
+    const firstValidUserMessage = chat.messages.find(
+      (msg) =>
+        msg.role === "user" &&
+        msg.content?.trim() &&
+        !isGreetingMessage(msg.content) &&
+        msg.content.length >= 4
     );
 
-    if (!firstValidUserMessage) return 'New Chat';
+    if (!firstValidUserMessage) return "New Chat";
 
-    let title = firstValidUserMessage.content.trim().replace(/[*_`~]/g, '');
+    let title = firstValidUserMessage.content.trim().replace(/[*_`~]/g, "");
     if (title.length > 50) {
       const truncated = title.substring(0, 47);
-      const lastSpace = truncated.lastIndexOf(' ');
-      title = (lastSpace > 20 ? truncated.substring(0, lastSpace) : truncated) + '...';
+      const lastSpace = truncated.lastIndexOf(" ");
+      title =
+        (lastSpace > 20 ? truncated.substring(0, lastSpace) : truncated) +
+        "...";
     }
 
-    return title.charAt(0).toUpperCase() + title.slice(1).replace(/[.!?]+$/, '');
+    return (
+      title.charAt(0).toUpperCase() + title.slice(1).replace(/[.!?]+$/, "")
+    );
   }, []);
 
-  const deleteChat = useCallback((chatId) => {
-    setChats(prev => prev.filter(chat => chat.id !== chatId));
-    if (currentChatId === chatId) setCurrentChatId(null);
-  }, [currentChatId]);
+  const deleteChat = useCallback(
+    (chatId) => {
+      setChats((prev) => prev.filter((chat) => chat.id !== chatId));
+      if (currentChatId === chatId) setCurrentChatId(null);
+    },
+    [currentChatId]
+  );
 
   const stopGeneration = useCallback(() => {
     if (abortController) {
@@ -436,12 +531,12 @@ function App({account,logout}) { // Merged App and ChatApp signatures
     const imageMatches = content.match(/aidn_(\d{3})/g);
     if (imageMatches) {
       const uniqueImages = [...new Set(imageMatches)];
-      uniqueImages.forEach(match => {
-        const index = match.split('_')[1];
+      uniqueImages.forEach((match) => {
+        const index = match.split("_")[1];
         images.push({
           index,
           url: `/api/images/${match}.jpeg`,
-          alt: `Reference Image ${index}`
+          alt: `Reference Image ${index}`,
         });
       });
     }
@@ -449,62 +544,93 @@ function App({account,logout}) { // Merged App and ChatApp signatures
     // Process source_documents if available (from App2.js)
     const DUMMY_URL = process.env.REACT_APP_DUMMY_URL;
 
-try {
-  if (sourceDocuments) {
-    if (typeof sourceDocuments === "string") {
-      sourceDocuments = JSON.parse(sourceDocuments);
-    }
+    try {
+      if (sourceDocuments) {
+        if (typeof sourceDocuments === "string") {
+          sourceDocuments = JSON.parse(sourceDocuments);
+        }
 
-    if (Array.isArray(sourceDocuments)) {
-      references = sourceDocuments.map((doc, index) => {
-        const metadata = doc.metadata || {};
-        return {
-          id: `ref-${index + 1}`,
-          title: metadata["Header 1"] || "Reference Document",
-          source: metadata.source || "Unknown Source",
-          url: metadata.url || `${DUMMY_URL}?doc=${encodeURIComponent(metadata.source || 'unknown')}`,
-          excerpt: doc.page_content || "",
-          relevanceScore: parseFloat(doc.relevance_score || metadata.score || 0.75),
-          type: "document"
-        };
-      });
+        if (Array.isArray(sourceDocuments)) {
+          references = sourceDocuments.map((doc, index) => {
+            const metadata = doc.metadata || {};
+            return {
+              id: `ref-${index + 1}`,
+              title: metadata["Header 1"] || "Reference Document",
+              source: metadata.source || "Unknown Source",
+              url:
+                metadata.url ||
+                `${DUMMY_URL}?doc=${encodeURIComponent(
+                  metadata.source || "unknown"
+                )}`,
+              excerpt: doc.page_content || "",
+              relevanceScore: parseFloat(
+                doc.relevance_score || metadata.score || 0.75
+              ),
+              type: "document",
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Failed to parse source_documents:", e);
+      references = [];
     }
-  }
-} catch (e) {
-  console.warn("⚠️ Failed to parse source_documents:", e);
-  references = [];
-}
-
 
     // Fallback/additional mock references if none from source_documents (from App1.js)
     if (references.length === 0) {
       const contentLower = content.toLowerCase();
       const refTypes = [
-        { keywords: ['api', 'endpoint', 'rest'], ref: { id: 'ref-api-1', title: 'REST APIs for OCM Functionality', source: 'Technical Documentation', type: 'documentation' }},
-        { keywords: ['integrity', 'validation'], ref: { id: 'ref-integrity-1', title: 'Integrity Validation Process', source: 'System Guide', type: 'guide' }},
-        { keywords: ['authentication', 'security'], ref: { id: 'ref-auth-1', title: 'HTTP Basic Authentication', source: 'Security Documentation', type: 'security' }}
+        {
+          keywords: ["api", "endpoint", "rest"],
+          ref: {
+            id: "ref-api-1",
+            title: "REST APIs for OCM Functionality",
+            source: "Technical Documentation",
+            type: "documentation",
+          },
+        },
+        {
+          keywords: ["integrity", "validation"],
+          ref: {
+            id: "ref-integrity-1",
+            title: "Integrity Validation Process",
+            source: "System Guide",
+            type: "guide",
+          },
+        },
+        {
+          keywords: ["authentication", "security"],
+          ref: {
+            id: "ref-auth-1",
+            title: "HTTP Basic Authentication",
+            source: "Security Documentation",
+            type: "security",
+          },
+        },
       ];
 
       refTypes.forEach(({ keywords, ref }) => {
-        if (keywords.some(keyword => contentLower.includes(keyword))) {
-          references.push({ ...ref, relevanceScore: Math.random() * 0.3 + 0.7 });
+        if (keywords.some((keyword) => contentLower.includes(keyword))) {
+          references.push({
+            ...ref,
+            relevanceScore: Math.random() * 0.3 + 0.7,
+          });
         }
       });
 
       if (references.length === 0) {
         references.push({
-          id: 'ref-general-1',
-          title: 'Teams Copilot Documentation',
-          source: 'User Guide',
-          type: 'guide',
-          relevanceScore: 0.70
+          id: "ref-general-1",
+          title: "Teams Copilot Documentation",
+          source: "User Guide",
+          type: "guide",
+          relevanceScore: 0.7,
         });
       }
     }
 
     return { images, references };
   }, []);
-
 
   // Merged sendMessage logic
   const sendMessage = useCallback(async () => {
@@ -515,12 +641,13 @@ try {
     if (!chatId) {
       const newChat = {
         id: Date.now().toString(),
-        title: input.trim().slice(0, 50) + (input.trim().length > 50 ? '...' : ''),
+        title:
+          input.trim().slice(0, 50) + (input.trim().length > 50 ? "..." : ""),
         messages: [],
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
-      setChats(prev => [newChat, ...prev]);
+      setChats((prev) => [newChat, ...prev]);
       chatId = newChat.id;
       setCurrentChatId(chatId);
     }
@@ -528,34 +655,39 @@ try {
     const userMessage = {
       id: Date.now().toString(),
       content: input.trim(),
-      role: 'user',
-      timestamp: new Date()
+      role: "user",
+      timestamp: new Date(),
     };
 
-    setChats(prev => prev.map(chat =>
-      chat.id === chatId
-        ? {
-            ...chat,
-            messages: [...chat.messages, userMessage],
-            title: chat.messages.length === 0 ? generateChatTitle({ messages: [userMessage] }) : chat.title,
-            updatedAt: new Date()
-          }
-        : chat
-    ));
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              messages: [...chat.messages, userMessage],
+              title:
+                chat.messages.length === 0
+                  ? generateChatTitle({ messages: [userMessage] })
+                  : chat.title,
+              updatedAt: new Date(),
+            }
+          : chat
+      )
+    );
 
-    setInput('');
+    setInput("");
     setIsGenerating(true);
 
     const controller = new AbortController();
     setAbortController(controller);
 
     try {
-      const currentChatMessages = chats.find(c => c.id === chatId)?.messages || [];
+      const currentChatMessages =
+        chats.find((c) => c.id === chatId)?.messages || [];
 
       const lastAssistantMessage = [...currentChatMessages]
         .reverse()
         .find((msg) => msg.role === "assistant");
-
 
       const payload = {
         message: input.trim(),
@@ -567,49 +699,67 @@ try {
         },
         client: platformInfo.icon,
         messages: lastAssistantMessage ? [lastAssistantMessage] : [],
-        trace_id: '',
+        trace_id: "",
       };
 
       console.log("🚀 Final Payload to Backend:", payload);
 
-      const response = await fetch(`${API_BASE}/chat/${ENV_PROJECT}/${selectedProjectVersion}`, { // Using App2.js API endpoint
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
+      const response = await fetch(
+        `${API_BASE}/chat/${ENV_PROJECT}/${selectedProjectVersion}`,
+        {
+          // Using App2.js API endpoint
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        }
+      );
 
-      if (!response.ok) throw new Error((await response.json()).error || `HTTP ${response.status}`);
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).error || `HTTP ${response.status}`
+        );
 
       const data = await response.json();
-      let aiContent = data.answer || data.choices?.[0]?.message?.content || 'Sorry, I received an empty response.'; // Combined response parsing
-      if (data.traceid){
+      let aiContent =
+        data.answer ||
+        data.choices?.[0]?.message?.content ||
+        "Sorry, I received an empty response."; // Combined response parsing
+      if (data.traceid) {
         console.log(aiContent);
         setTraceId(data.traceid);
         console.log("Trace Id noted: ", data.traceid); // Log the new trace ID
       }
 
-
       // Parse references using the combined logic
-      const { images, references } = parseRAGResponse(aiContent, data.source_documents);
+      const { images, references } = parseRAGResponse(
+        aiContent,
+        data.source_documents
+      );
 
       const assistantId = (Date.now() + 1).toString();
 
       let newMessage = {
         id: assistantId,
         content: aiContent, // Start empty for typing animation
-        role: 'assistant',
+        role: "assistant",
         timestamp: new Date(),
         images,
         references,
-        model: selectedProjectVersion // Added version to message
+        model: selectedProjectVersion, // Added version to message
       };
 
-      setChats(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, newMessage], updatedAt: new Date() }
-          : chat
-      ));
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, newMessage],
+                updatedAt: new Date(),
+              }
+            : chat
+        )
+      );
 
       // Simulate typing animation from App2.js
       // let index = 0;
@@ -641,32 +791,47 @@ try {
       // };
       // typeNextChar();
       scrollToBottom();
-
     } catch (error) {
-      const errorContent = error.name === 'AbortError'
-        ? 'Response generation was stopped.'
-        : `Sorry, I encountered an error: ${error.message}.`;
+      const errorContent =
+        error.name === "AbortError"
+          ? "Response generation was stopped."
+          : `Sorry, I encountered an error: ${error.message}.`;
 
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         content: errorContent,
-        role: 'assistant',
+        role: "assistant",
         timestamp: new Date(),
         images: [],
-        references: []
+        references: [],
       };
 
-      setChats(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: [...chat.messages, errorMessage], updatedAt: new Date() }
-          : chat
-      ));
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, errorMessage],
+                updatedAt: new Date(),
+              }
+            : chat
+        )
+      );
     } finally {
       setIsGenerating(false);
       setAbortController(null);
     }
-  }, [input, isGenerating, currentChatId, chats, generateChatTitle, parseRAGResponse, selectedProjectVersion, platformInfo, account]);
-
+  }, [
+    input,
+    isGenerating,
+    currentChatId,
+    chats,
+    generateChatTitle,
+    parseRAGResponse,
+    selectedProjectVersion,
+    platformInfo,
+    account,
+  ]);
 
   // Event listener for 'version-selected' from App2.js (updated to use selectedProjectVersion)
   useEffect(() => {
@@ -700,133 +865,152 @@ try {
     return () => window.removeEventListener("version-selected", handler);
   }, [currentChatId]);
 
-
-  const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      isGenerating ? stopGeneration() : sendMessage();
-    }
-  }, [isGenerating, stopGeneration, sendMessage]);
+  const handleKeyPress = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        isGenerating ? stopGeneration() : sendMessage();
+      }
+    },
+    [isGenerating, stopGeneration, sendMessage]
+  );
 
   // Combined handleTextareaInput to include platform-specific max-height from App1.js
-  const handleTextareaInput = useCallback((e) => {
-    const target = e.target;
-    target.style.height = 'auto';
-    target.style.height = Math.min(target.scrollHeight, platformInfo.isTeams ? 32 : 96) + 'px'; // Max height 32px for Teams (2 lines) and 96px for web (6 lines based on App2.js)
-  }, [platformInfo.isTeams]);
+  const handleTextareaInput = useCallback(
+    (e) => {
+      const target = e.target;
+      target.style.height = "auto";
+      target.style.height =
+        Math.min(target.scrollHeight, platformInfo.isTeams ? 32 : 96) + "px"; // Max height 32px for Teams (2 lines) and 96px for web (6 lines based on App2.js)
+    },
+    [platformInfo.isTeams]
+  );
 
   // Landing page rendering (Combined from both, prioritizing App1.js structure and styling for landing)
-if (showLanding) {
-  return (
-    <div className={`min-h-screen max-h-screen flex overflow-hidden ${
-      platformInfo.isTeams ? 'bg-white' : 'bg-gradient-to-br from-slate-50 to-blue-50'
-    }`}>
-      {/* Mobile Hamburger Menu */}
-      {isMobile && (
-        <button
-          data-hamburger-menu
-          onClick={() => handleMobileToggle(true)}
-          className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+  if (showLanding) {
+    return (
+      <div
+        className={`min-h-screen max-h-screen flex overflow-hidden ${
+          platformInfo.isTeams
+            ? "bg-white"
+            : "bg-gradient-to-br from-slate-50 to-blue-50"
+        }`}
+      >
+        {/* Mobile Hamburger Menu */}
+        {isMobile && (
+          <button
+            data-hamburger-menu
+            onClick={() => handleMobileToggle(true)}
+            className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-600" />
+          </button>
+        )}
+
+
+        {/* Mobile Overlay */}
+        {isMobile && isMobileOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
+        )}
+
+        <ChatSidebar
+          chats={chats}
+          currentChatId={currentChatId}
+          onSelectChat={setCurrentChatId}
+          onNewChat={createNewChat}
+          onDeleteChat={deleteChat}
+          isCollapsed={isMobile ? false : isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          isTeams={platformInfo.isTeams}
+          account={account}
+          logout={logout}
+          isMobileOpen={isMobileOpen}
+          onMobileToggle={handleMobileToggle}
+        />
+
+        <div
+          className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
+            platformInfo.isTeams ? "pt-12" : ""
+          } ${isMobile ? "pt-20" : ""}`}
         >
-          <Menu className="w-5 h-5 text-gray-600" />
-        </button>
-      )}
+          <div className="w-full max-w-xl mx-auto">
+            <div className="text-center mb-8">
+              {/* Logo */}
+              <div className="inline-flex items-center justify-center mb-4">
+                <img
+                  src={CompanyLogo}
+                  alt="Company Logo"
+                  className="w-20 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
+                />
+              </div>
 
-      {/* Desktop Profile Menu */}
-      {!isMobile && <ProfileMenu account={account} logout={logout}/>}
-
-      {/* Mobile Overlay */}
-      {isMobile && isMobileOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
-      )}
-
-      <ChatSidebar
-        chats={chats}
-        currentChatId={currentChatId}
-        onSelectChat={setCurrentChatId}
-        onNewChat={createNewChat}
-        onDeleteChat={deleteChat}
-        isCollapsed={isMobile ? false : isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-        isTeams={platformInfo.isTeams}
-        account={account}
-        logout={logout}
-        isMobileOpen={isMobileOpen}
-        onMobileToggle={handleMobileToggle}
-      />
-
-      <div className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
-        platformInfo.isTeams ? 'pt-12' : ''
-      } ${isMobile ? 'pt-20' : ''}`}>
-        <div className="w-full max-w-xl mx-auto">
-          <div className="text-center mb-8">
-            {/* Logo */}
-            <div className="inline-flex items-center justify-center mb-4">
-              <img
-                src={CompanyLogo}
-                alt="Company Logo"
-                className="w-20 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
-              />
+              {/* Welcome Message */}
+              <p className="text-gray-600 text-sm sm:text-base px-4">
+                Hello {account?.name || "Guest"}! Welcome to{" "}
+                <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
+              </p>
             </div>
 
-            {/* Welcome Message */}
-            <p className="text-gray-600 text-sm sm:text-base px-4">
-              Hello {account?.name || "Guest"}! Welcome to <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-4 sm:mx-0">
-            <div className="flex items-center gap-2 p-3">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Ask me anything to get started..."
-                disabled={isGenerating}
-                className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
-                rows={1}
-                onInput={handleTextareaInput}
-              />
-              <div className="flex items-center gap-2">
-                <div className="max-w-[120px] sm:max-w-xs">
-                  <CompactVersionSelector
-                    selectedProjectVersion={selectedProjectVersion}
-                    onProjectVersionChange={setSelectedProjectVersion}
-                    disabled={isGenerating}
-                  />
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-4 sm:mx-0">
+              <div className="flex items-center gap-2 p-3">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Ask me anything to get started..."
+                  disabled={isGenerating}
+                  className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
+                  rows={1}
+                  onInput={handleTextareaInput}
+                />
+                <div className="flex items-center gap-2">
+                  <div className="min-w-fit max-w-none">
+                    <CompactVersionSelector
+                      selectedProjectVersion={selectedProjectVersion}
+                      onProjectVersionChange={setSelectedProjectVersion}
+                      disabled={isGenerating}
+                    />
+                  </div>
+                  <button
+                    onClick={isGenerating ? stopGeneration : sendMessage}
+                    disabled={!isGenerating && !input.trim()}
+                    className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
+                      isGenerating
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    }`}
+                  >
+                    {isGenerating ? (
+                      <Square className="w-3 h-3" />
+                    ) : (
+                      <SendHorizontal className="w-3 h-3" />
+                    )}
+                  </button>
                 </div>
-                <button
-                  onClick={isGenerating ? stopGeneration : sendMessage}
-                  disabled={!isGenerating && !input.trim()}
-                  className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
-                    isGenerating
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                  }`}
-                >
-                  {isGenerating ? <Square className="w-3 h-3" /> : <SendHorizontal className="w-3 h-3" />}
-                </button>
               </div>
             </div>
-          </div>
 
-          <div className="text-center mt-3 px-4 sm:px-0">
-            <p className="text-xs text-gray-400">
-              {isGenerating ? "AI is generating a response..." : ""}
-            </p>
+            <div className="text-center mt-3 px-4 sm:px-0">
+              <p className="text-xs text-gray-400">
+                {isGenerating ? "AI is generating a response..." : ""}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
   if (showLanding) {
     return (
-      <div className={`min-h-screen max-h-screen flex overflow-hidden ${
-        platformInfo.isTeams ? 'bg-white' : 'bg-gradient-to-br from-slate-50 to-blue-50'
-      }`}>
-        <ProfileMenu account={account} logout={logout}/> {/* From App2.js */}
+      <div
+        className={`min-h-screen max-h-screen flex overflow-hidden ${
+          platformInfo.isTeams
+            ? "bg-white"
+            : "bg-gradient-to-br from-slate-50 to-blue-50"
+        }`}
+      >
+       
         <ChatSidebar
           chats={chats}
           currentChatId={currentChatId}
@@ -837,28 +1021,28 @@ if (showLanding) {
           onToggleCollapse={toggleSidebar}
           isTeams={platformInfo.isTeams}
         />
-
-        <div className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
-          platformInfo.isTeams ? 'pt-12' : '' // From App1.js
-        }`}>
+        <div
+          className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
+            platformInfo.isTeams ? "pt-12" : "" // From App1.js
+          }`}
+        >
           <div className="w-full max-w-xl mx-auto">
+            <div className="text-center mb-8">
+              {/* Logo */}
+              <div className="inline-flex items-center justify-center mb-4">
+                <img
+                  src={CompanyLogo}
+                  alt="Company Logo"
+                  className="w-24 sm:w-32 md:w-40 object-contain mx-auto drop-shadow-md"
+                />
+              </div>
 
-<div className="text-center mb-8">
-    {/* Logo */}
-    <div className="inline-flex items-center justify-center mb-4">
-        <img
-            src={CompanyLogo}
-            alt="Company Logo"
-            className="w-24 sm:w-32 md:w-40 object-contain mx-auto drop-shadow-md"
-        />
-    </div>
-
-
-    {/* Welcome Message */}
-    <p className="text-gray-600 text-sm sm:text-base">
-        Hello {account?.name || "Guest"}! Welcome to <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
-    </p>
-</div>
+              {/* Welcome Message */}
+              <p className="text-gray-600 text-sm sm:text-base">
+                Hello {account?.name || "Guest"}! Welcome to{" "}
+                <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
+              </p>
+            </div>
 
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
               <div className="flex items-center gap-2 p-3">
@@ -884,11 +1068,15 @@ if (showLanding) {
                     disabled={!isGenerating && !input.trim()}
                     className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
                       isGenerating
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     }`}
                   >
-                    {isGenerating ? <Square className="w-3 h-3" /> : <SendHorizontal className="w-3 h-3" />}
+                    {isGenerating ? (
+                      <Square className="w-3 h-3" />
+                    ) : (
+                      <SendHorizontal className="w-3 h-3" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -896,192 +1084,221 @@ if (showLanding) {
 
             <div className="text-center mt-3">
               <p className="text-xs text-gray-400">
-                {isGenerating
-                  ? "AI is generating a response..."
-                  : ""
-                }
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    );
-  }
-
-  // Chat interface rendering (Combined from both)
-return (
-  <div className={`min-h-screen max-h-screen flex overflow-hidden ${
-    platformInfo.isTeams ? 'bg-white' : 'bg-gray-50'
-  } relative`}>
-    
-    {/* Mobile Hamburger Menu */}
-    {isMobile && (
-      <button
-        data-hamburger-menu
-        onClick={() => handleMobileToggle(true)}
-        className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-      >
-        <Menu className="w-5 h-5 text-gray-600" />
-      </button>
-    )}
-
-    {/* Desktop Profile Menu */}
-    {!isMobile && <ProfileMenu account={account} logout={logout}/>}
-
-    {/* Mobile Overlay */}
-    {isMobile && isMobileOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
-    )}
-
-    <ChatSidebar
-      chats={chats}
-      currentChatId={currentChatId}
-      onSelectChat={setCurrentChatId}
-      onNewChat={createNewChat}
-      onDeleteChat={deleteChat}
-      isCollapsed={isMobile ? false : isSidebarCollapsed}
-      onToggleCollapse={toggleSidebar}
-      isTeams={platformInfo.isTeams}
-      account={account}
-      logout={logout}
-      isMobileOpen={isMobileOpen}
-      onMobileToggle={handleMobileToggle}
-    />
-
-    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300 ${
-      isReferencesOpen ? 'mr-0 lg:mr-80' : ''
-    } ${isMobile ? 'pt-16' : ''}`}>
-
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 min-h-0">
-        {currentChat?.messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center px-4">
-            <div className="text-center max-w-sm">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Start a conversation</h3>
-              <p className="text-sm text-gray-500">Ask me anything to get started with your AI assistant</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
-            {currentChat?.messages.map((message) => (
-              <div key={message.id} className="w-full">
-                <ChatMessage
-                  message={message}
-                  onReferencesClick={handleReferencesToggle}
-                  isReferencesOpen={isReferencesOpen && selectedMessageReferences?.messageId === message.id}
-                />
-              </div>
-            ))}
-            {isGenerating && (
-              <div className="w-full">
-                <ChatMessage
-                  message={{
-                    id: 'generating',
-                    content: '',
-                    role: 'assistant',
-                    timestamp: new Date(),
-                    images: [],
-                    references: [],
-                    model: selectedProjectVersion
-                  }}
-                  isGenerating={true}
-                  onReferencesClick={handleReferencesToggle}
-                />
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </div>
-
-      {/* Input area */}
-      <div className={`bg-white border-t border-gray-200 flex-shrink-0 ${
-        platformInfo.isTeams ? 'px-2 sm:px-3 py-2' : 'px-2 sm:px-4 py-3'
-      }`}>
-        <div className="max-w-4xl mx-auto">
-          <div className={`bg-gray-50 rounded-lg border border-gray-200 overflow-hidden ${
-            platformInfo.isTeams ? 'rounded-md' : ''
-          }`}>
-            <div className={`flex items-center gap-2 ${
-              platformInfo.isTeams ? 'p-2' : 'p-3'
-            }`}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Ask me anything..."
-                disabled={isGenerating}
-                className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 ${
-                  platformInfo.isTeams ? 'max-h-12 text-xs' : 'max-h-24 text-sm'
-                }`}
-                rows={1}
-                onInput={handleTextareaInput}
-              />
-              <div className="flex items-center gap-2">
-                <div className={`${
-                  platformInfo.isTeams ? 'max-w-[120px]' : 'max-w-[140px] sm:max-w-xs'
-                }`}>
-                  <CompactVersionSelector
-                    selectedProjectVersion={selectedProjectVersion}
-                    onProjectVersionChange={setSelectedProjectVersion}
-                    disabled={isGenerating}
-                  />
-                </div>
-                <button
-                  onClick={isGenerating ? stopGeneration : sendMessage}
-                  disabled={!isGenerating && !input.trim()}
-                  className={`flex items-center justify-center text-white rounded-md transition-all duration-200 flex-shrink-0 ${
-                    platformInfo.isTeams
-                      ? 'w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                      : 'w-8 h-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                  } ${
-                    isGenerating
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : ''
-                  }`}
-                >
-                  {isGenerating ? (
-                    <Square className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} />
-                  ) : (
-                    <SendHorizontal className={platformInfo.isTeams ? "w-3 h-3" : "w-4 h-4"} />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom status bar */}
-          <div className={`flex items-center justify-center ${
-            platformInfo.isTeams ? 'mt-1' : 'mt-2'
-          }`}>
-            <div className="text-center">
-              <p className={`text-gray-400 ${
-                platformInfo.isTeams ? 'text-[10px]' : 'text-xs'
-              }`}>
                 {isGenerating ? "AI is generating a response..." : ""}
               </p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    );
+  }
 
-    <div ref={referencePanelRef} className="hidden lg:block">
-      <ReferencesPanel
-        isOpen={isReferencesOpen}
-        references={selectedMessageReferences?.references || []}
-        onClose={closeReferences}
+  // Chat interface rendering (Combined from both)
+  return (
+    <div
+      className={`min-h-screen max-h-screen flex overflow-hidden ${
+        platformInfo.isTeams ? "bg-white" : "bg-gray-50"
+      } relative`}
+    >
+      {/* Mobile Hamburger Menu */}
+      {isMobile && (
+        <button
+          data-hamburger-menu
+          onClick={() => handleMobileToggle(true)}
+          className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+        >
+          <Menu className="w-5 h-5 text-gray-600" />
+        </button>
+      )}
+
+
+
+      {/* Mobile Overlay */}
+      {isMobile && isMobileOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
+      )}
+
+      <ChatSidebar
+        chats={chats}
+        currentChatId={currentChatId}
+        onSelectChat={setCurrentChatId}
+        onNewChat={createNewChat}
+        onDeleteChat={deleteChat}
+        isCollapsed={isMobile ? false : isSidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        isTeams={platformInfo.isTeams}
+        account={account}
+        logout={logout}
+        isMobileOpen={isMobileOpen}
+        onMobileToggle={handleMobileToggle}
       />
+
+      <div
+        className={`flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300 ${
+          isReferencesOpen ? "mr-0 lg:mr-80" : ""
+        } ${isMobile ? "pt-16" : ""}`}
+      >
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 min-h-0">
+          {currentChat?.messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center px-4">
+              <div className="text-center max-w-sm">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  Start a conversation
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Ask me anything to get started with your AI assistant
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+              {currentChat?.messages.map((message) => (
+                <div key={message.id} className="w-full">
+                  <ChatMessage
+                    message={message}
+                    onReferencesClick={handleReferencesToggle}
+                    isReferencesOpen={
+                      isReferencesOpen &&
+                      selectedMessageReferences?.messageId === message.id
+                    }
+                  />
+                </div>
+              ))}
+              {isGenerating && (
+                <div className="w-full">
+                  <ChatMessage
+                    message={{
+                      id: "generating",
+                      content: "",
+                      role: "assistant",
+                      timestamp: new Date(),
+                      images: [],
+                      references: [],
+                      model: selectedProjectVersion,
+                    }}
+                    isGenerating={true}
+                    onReferencesClick={handleReferencesToggle}
+                  />
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Input area */}
+        <div
+          className={`bg-white border-t border-gray-200 flex-shrink-0 ${
+            platformInfo.isTeams ? "px-2 sm:px-3 py-2" : "px-2 sm:px-4 py-2"
+          }`}
+        >
+          <div className="max-w-3xl mx-auto">
+            <div
+              className={`bg-white rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden ${
+                platformInfo.isTeams ? "rounded-md" : ""
+              }`}
+            >
+              <div
+                className={`flex items-center gap-2 ${
+                  platformInfo.isTeams ? "p-2" : "p-2.5"
+                }`}
+              >
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Ask me anything..."
+                  disabled={isGenerating}
+                  className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 placeholder-gray-400 ${
+                    platformInfo.isTeams
+                      ? "max-h-8 text-xs"
+                      : "max-h-16 text-sm"
+                  }`}
+                  rows={1}
+                  onInput={handleTextareaInput}
+                />
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className={`${
+                      platformInfo.isTeams
+                        ? "max-w-[100px]"
+                        : "max-w-[120px] sm:max-w-[140px]"
+                    }`}
+                  >
+                    <CompactVersionSelector
+                      selectedProjectVersion={selectedProjectVersion}
+                      onProjectVersionChange={setSelectedProjectVersion}
+                      disabled={isGenerating}
+                    />
+                  </div>
+                  <button
+                    onClick={isGenerating ? stopGeneration : sendMessage}
+                    disabled={!isGenerating && !input.trim()}
+                    className={`flex items-center justify-center text-white rounded-lg transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md ${
+                      platformInfo.isTeams
+                        ? "w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        : "w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    } ${isGenerating ? "bg-red-500 hover:bg-red-600" : ""}`}
+                  >
+                    {isGenerating ? (
+                      <Square
+                        className={
+                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                        }
+                      />
+                    ) : (
+                      <SendHorizontal
+                        className={
+                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                        }
+                      />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Compact status indicator */}
+            {/* Status indicators and disclaimer */}
+            <div className="flex items-center justify-center mt-1">
+              {isGenerating ? (
+                <div className="flex items-center gap-1">
+                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                  <p
+                    className={`text-gray-400 ${
+                      platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+                    }`}
+                  >
+                    Generating...
+                  </p>
+                </div>
+              ) : (
+                <p
+                  className={`text-gray-400 ${
+                    platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+                  }`}
+                >
+                  AI can make mistakes. Verify important information.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div ref={referencePanelRef} className="hidden lg:block">
+        <ReferencesPanel
+          isOpen={isReferencesOpen}
+          references={selectedMessageReferences?.references || []}
+          onClose={closeReferences}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;
-
-
-

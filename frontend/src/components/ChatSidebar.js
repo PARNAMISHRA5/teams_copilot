@@ -185,7 +185,7 @@ const ChatSidebar = ({
 
   const validChats = Array.isArray(chats) ? chats : [];
 
-  // Mobile sidebar
+  // Mobile sidebar (unchanged)
   if (isMobile) {
     return (
       <div
@@ -300,7 +300,7 @@ const ChatSidebar = ({
     );
   }
 
-  // Desktop sidebar (existing code)
+  // Desktop sidebar with ProfileMenu at bottom
   return (
     <div className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out relative ${
       isCollapsed ? 'w-12' : 'w-64'
@@ -408,6 +408,7 @@ const ChatSidebar = ({
         </div>
       </div>
 
+      {/* Chat List - Only show when not collapsed */}
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto">
           {validChats.length === 0 ? (
@@ -464,6 +465,20 @@ const ChatSidebar = ({
           )}
         </div>
       )}
+
+      {/* Spacer to push profile menu to bottom when collapsed */}
+      {isCollapsed && <div className="flex-1" />}
+
+      {/* Desktop Profile Menu at Bottom */}
+        <div className={`h-12 flex items-center border-t border-gray-100 bg-gray-50 ${isCollapsed ? 'px-2' : 'px-2.5'}`}>
+          <ProfileMenu 
+            account={account} 
+            logout={logout}
+            isCollapsed={isCollapsed}
+            isMobile={false}
+          />
+        </div>
+
     </div>
   );
 };

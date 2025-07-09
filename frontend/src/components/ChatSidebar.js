@@ -1,23 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, MessageSquare, Home, PanelRightOpen, PanelRightClose, Menu, X } from 'lucide-react';
+import { Plus, MessageSquare, Home, PanelRightOpen, PanelRightClose, Menu, X,Trash2 } from 'lucide-react';
 import ProfileMenu from './ProfileMenu';
 
-const DeleteIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-4 h-4"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
+
 
 const ChatSidebar = ({
   chats = [],
@@ -31,12 +16,15 @@ const ChatSidebar = ({
   account,
   logout,
   isMobileOpen,
-  onMobileToggle
+  onMobileToggle,
+  platformInfo = { isTeams: false }
 }) => {
   const [showChatDropdown, setShowChatDropdown] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDeleteChatId, setPendingDeleteChatId] = useState(null);
 
   // Handle window resize
   useEffect(() => {
@@ -166,11 +154,9 @@ const ChatSidebar = ({
 
   const handleDeleteChat = (chatId, e) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this chat?')) {
-      if (onDeleteChat) {
-        onDeleteChat(chatId);
-      }
-    }
+    setPendingDeleteChatId(chatId);
+    setShowDeleteConfirm(true);
+
   };
 
   const handleChatSelect = (chatId) => {
@@ -185,7 +171,15 @@ const ChatSidebar = ({
 
   const validChats = Array.isArray(chats) ? chats : [];
 
-  // Mobile sidebar (unchanged)
+  // Calculate dynamic input area height based on platformInfo
+  const getInputAreaHeight = () => {
+    if (platformInfo.isTeams) {
+      return 'h-12'; // Adjusted height for teams to match input area
+    }
+    return 'h-14'; // Default height to match input area
+  };
+
+  // Mobile sidebar
   if (isMobile) {
     return (
       <div
@@ -278,7 +272,8 @@ const ChatSidebar = ({
                         className="ml-2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 flex-shrink-0"
                         title="Delete chat"
                       >
-                        <DeleteIcon />
+                        <Trash2 className="w-4 h-4" />
+
                       </button>
                     </div>
                   </div>
@@ -288,14 +283,55 @@ const ChatSidebar = ({
           )}
         </div>
 
-        {/* Mobile Profile Menu at Bottom */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50">
-          <ProfileMenu 
-            account={account} 
-            logout={logout}
-            isMobile={true}
-          />
+        {/* Mobile Profile Menu at Bottom - with proper height and visible username */}
+        <div className={`${getInputAreaHeight()} flex items-center border-t border-gray-100 bg-gray-50 px-4`}>
+          <div className="w-full">
+            <ProfileMenu 
+              account={account} 
+              logout={logout}
+              isMobile={true}
+              showUsername={true}
+              platformInfo={platformInfo}
+            />
+          </div>
         </div>
+{showDeleteConfirm && (
+  <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+<div className="bg-white rounded-xl shadow-xl ring-1 ring-gray-200 w-full max-w-xs p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 bg-red-100 text-red-600 rounded-full p-2">
+          <Trash2 className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-base font-semibold text-gray-800">Delete this chat?</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            This action can’t be undone.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 space-y-2">
+        <button
+          onClick={() => {
+            onDeleteChat(pendingDeleteChatId);
+            setShowDeleteConfirm(false);
+            setPendingDeleteChatId(null);
+          }}
+          className="w-full py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition"
+        >
+          Delete
+        </button>
+        <button
+          onClick={() => setShowDeleteConfirm(false)}
+          className="w-full py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
       </div>
     );
   }
@@ -368,7 +404,8 @@ const ChatSidebar = ({
                                   className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all duration-200 flex-shrink-0 opacity-0 group-hover:opacity-100"
                                   title="Delete chat"
                                 >
-                                  <DeleteIcon />
+                                  <Trash2 className="w-4 h-4" />
+
                                 </button>
                               </div>
                             </div>
@@ -455,7 +492,7 @@ const ChatSidebar = ({
                         className="ml-1.5 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all duration-200 flex-shrink-0"
                         title="Delete chat"
                       >
-                        <DeleteIcon />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -469,15 +506,57 @@ const ChatSidebar = ({
       {/* Spacer to push profile menu to bottom when collapsed */}
       {isCollapsed && <div className="flex-1" />}
 
-      {/* Desktop Profile Menu at Bottom */}
-        <div className={`h-12 flex items-center border-t border-gray-100 bg-gray-50 ${isCollapsed ? 'px-2' : 'px-2.5'}`}>
+      {/* Desktop Profile Menu at Bottom - with proper height */}
+      <div className={`${getInputAreaHeight()} flex items-center  border-gray-100 ${isCollapsed ? '' : 'bg-gray-50'} px-2.5`}>
+
+        <div className="w-full">
           <ProfileMenu 
             account={account} 
             logout={logout}
             isCollapsed={isCollapsed}
-            isMobile={false}
+            isMobile={isMobile}
+            showUsername={!isCollapsed}
+            platformInfo={platformInfo}
           />
         </div>
+        </div>
+{showDeleteConfirm && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-sm p-6 animate-fadeIn">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 bg-red-100 text-red-600 rounded-full p-2.5">
+          <Trash2 className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-800">Delete chat?</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            This will permanently delete the chat and its messages.
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          onClick={() => setShowDeleteConfirm(false)}
+          className="px-4 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            onDeleteChat(pendingDeleteChatId);
+            setShowDeleteConfirm(false);
+            setPendingDeleteChatId(null);
+          }}
+          className="px-4 py-1.5 text-sm bg-red-500 text-white hover:bg-red-600 rounded-lg transition font-medium shadow-sm"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
     </div>
   );

@@ -1039,7 +1039,7 @@ function App({ account, logout }) {
                 <img
                   src={CompanyLogo}
                   alt="Company Logo"
-                  className="w-12 h-12 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
+                  className="w-16 h-16 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
                 />
               </div>
 

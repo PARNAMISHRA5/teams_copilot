@@ -388,7 +388,7 @@ const cleanHtmlContent = (rawHtml) => {
                   ${copyStatus === 'copied' ? 'bg-green-100 text-green-700 border border-green-200'
                   : copyStatus === 'error' ? 'bg-red-100 text-red-700 border border-red-200'
                   : copyStatus === 'copying' ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-transparent'}
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent'}
                 `}>
                   {copyStatus === 'copied' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>

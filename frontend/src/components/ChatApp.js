@@ -1292,108 +1292,112 @@ function App({ account, logout }) {
           )}
         </div>
 
-        {/* Input area */}
-        <div
-          className={`bg-white border-t border-gray-200 flex-shrink-0 ${
-            platformInfo.isTeams ? "px-2 sm:px-3 py-2" : "px-2 sm:px-4 py-2"
+    
+
+{/* Input area */}
+<div
+  className={`bg-white border-t border-gray-200 flex-shrink-0 ${
+    platformInfo.isTeams ? "px-2 sm:px-3 py-2" : "px-2 sm:px-4 py-2"
+  }`}
+>
+  {/* Changed max-w-3xl to max-w-4xl to match chat messages container */}
+  <div className="w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+
+
+    <div
+      className={`bg-white rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden ${
+        platformInfo.isTeams ? "rounded-md" : ""
+      }`}
+    >
+      <div
+        className={`flex items-center gap-2 ${
+          platformInfo.isTeams ? "p-2" : "p-2.5"
+        }`}
+      >
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Ask me anything..."
+          disabled={isGenerating}
+          className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 placeholder-gray-400 ${
+            platformInfo.isTeams
+              ? "max-h-8 text-xs"
+              : "max-h-16 text-sm"
           }`}
-        >
-          <div className="max-w-3xl mx-auto">
+          rows={1}
+          onInput={handleTextareaInput}
+        />
+        <div className="flex items-center gap-1.5">
+          {VERSIONS_AVAILABLE.length > 0 && (
             <div
-              className={`bg-white rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden ${
-                platformInfo.isTeams ? "rounded-md" : ""
+              className={`${
+                platformInfo.isTeams
+                  ? "max-w-[100px]"
+                  : "max-w-[120px] sm:max-w-[140px]"
               }`}
             >
-              <div
-                className={`flex items-center gap-2 ${
-                  platformInfo.isTeams ? "p-2" : "p-2.5"
-                }`}
-              >
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask me anything..."
-                  disabled={isGenerating}
-                  className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 placeholder-gray-400 ${
-                    platformInfo.isTeams
-                      ? "max-h-8 text-xs"
-                      : "max-h-16 text-sm"
-                  }`}
-                  rows={1}
-                  onInput={handleTextareaInput}
-                />
-                <div className="flex items-center gap-1.5">
-                {VERSIONS_AVAILABLE.length > 0 && (
-                    <div
-                      className={`${
-                        platformInfo.isTeams
-                          ? "max-w-[100px]"
-                          : "max-w-[120px] sm:max-w-[140px]"
-                      }`}
-                    >
-                      <CompactVersionSelector
-                        selectedProjectVersion={selectedProjectVersion}
-                        onProjectVersionChange={setSelectedProjectVersion}
-                        disabled={isGenerating}
-                      />
-                    </div>
-                  )}
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center text-white rounded-lg transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md ${
-                      platformInfo.isTeams
-                        ? "w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        : "w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    } ${isGenerating ? "bg-red-500 hover:bg-red-600" : ""}`}
-                  >
-                    {isGenerating ? (
-                      <Square
-                        className={
-                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
-                        }
-                      />
-                    ) : (
-                      <SendHorizontal
-                        className={
-                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
-                        }
-                      />
-                    )}
-                  </button>
-                </div>
-              </div>
+              <CompactVersionSelector
+                selectedProjectVersion={selectedProjectVersion}
+                onProjectVersionChange={setSelectedProjectVersion}
+                disabled={isGenerating}
+              />
             </div>
-
-            {/* Compact status indicator */}
-            {/* Status indicators and disclaimer */}
-            <div className="flex items-center justify-center mt-1">
-              {isGenerating ? (
-                <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
-                  <p
-                    className={`text-gray-400 ${
-                      platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
-                    }`}
-                  >
-                    Generating...
-                  </p>
-                </div>
-              ) : (
-                <p
-                  className={`text-gray-400 ${
-                    platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
-                  }`}
-                >
-                  AI can make mistakes. Verify important information.
-                </p>
-              )}
-            </div>
-          </div>
+          )}
+          <button
+            onClick={isGenerating ? stopGeneration : sendMessage}
+            disabled={!isGenerating && !input.trim()}
+            className={`flex items-center justify-center text-white rounded-lg transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md ${
+              platformInfo.isTeams
+                ? "w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                : "w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            } ${isGenerating ? "bg-red-500 hover:bg-red-600" : ""}`}
+          >
+            {isGenerating ? (
+              <Square
+                className={
+                  platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                }
+              />
+            ) : (
+              <SendHorizontal
+                className={
+                  platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                }
+              />
+            )}
+          </button>
         </div>
       </div>
+    </div>
+
+    {/* Status indicators and disclaimer */}
+    <div className="flex items-center justify-center mt-1">
+      {isGenerating ? (
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+          <p
+            className={`text-gray-400 ${
+              platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+            }`}
+          >
+            Generating...
+          </p>
+        </div>
+      ) : (
+        <p
+          className={`text-gray-400 ${
+            platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+          }`}
+        >
+          AI can make mistakes. Verify important information.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+</div>
 
       <div ref={referencePanelRef} className="hidden lg:block">
         <ReferencesPanel

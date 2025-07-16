@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, ThumbsUp, ThumbsDown, Check, FileText, X, ZoomIn, ZoomOut, Download } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, Check, FileText, X, ZoomIn, ZoomOut, Download, Trash2 } from 'lucide-react'; // Added Trash2
 import defaultBotLogo from '../assets/dn logo.png'; // Using dn logo.png
 import FeedbackPopover from './FeedbackPopover'; // From chatmessage.js
 
+const FEEDBACK_URL = process.env.REACT_APP_FEEDBACK_URL;
+const DB_API_BASE = process.env.REACT_APP_API_URL;
+const ENV_PROJECT = process.env.REACT_APP_SELECTED_PROJECT;
 
-const ChatMessage = ({ 
-  message, 
-  isGenerating = false, 
+
+const ChatMessage = ({
+  message,
+  isGenerating = false,
+  traceId,
+  selectedProjectVersion,
   customBotLogo = defaultBotLogo,
   onReferencesClick,
-  isReferencesOpen = false 
+  isReferencesOpen = false,
+  token,
+  onDeleteMessage // Added onDeleteMessage prop
 }) => {
   const [copyStatus, setCopyStatus] = useState('idle');
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -18,21 +26,96 @@ const ChatMessage = ({
   const [imageZoom, setImageZoom] = useState(1);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const isUser = message.role === 'user';
-  const MEMORY_SHOT = parseInt(process.env.REACT_APP_MEMORY_SHOT || '1');
+  const MEMORY_SHOT = parseInt(process.env.REACT_APP_MEMORY_SHOT || '4');
 
-    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false); // From chatmessage.js
-    const thumbsDownRef = useRef(null); // From chatmessage.js
-  
-    const handleFeedbackSubmit = (text) => {
-      console.log("📩 Feedback received:", text);
-      // Optionally: send to backend or store
-    };
-  
+
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackAnchor, setFeedbackAnchor] = useState(null);
+
+
+  const handleFeedbackSubmit = async (comment, score) => {
+    try {
+      const traceId = message?.trace_id || message?.traceId || ''; // Ensure trace ID exists
+      const selectedProjectVersion = message?.model || 'v4.2'; // fallback
+      const url = `${FEEDBACK_URL}/feedback/${ENV_PROJECT}/${selectedProjectVersion}`;
+      console.log(url);
+
+      const payload = {
+        trace_id: traceId,
+        score: score,
+        comment: comment || (score === 1 ? 'Liked' : 'Disliked')
+      };
+
+      console.log("🚀 Feedback Payload to Backend:", payload);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Failed to send feedback');
+      console.log('✅ Feedback sent:', payload);
+    } catch (err) {
+      console.error('❌ Feedback error:', err);
+    }
+  };
+
+  // Function to handle message deletion
+  const handleDeleteMessage = async () => {
+    // Corrected: Ensure conversation_id and message.id are present
+    if (!message || message.conversation_id === undefined || message.id === undefined) {
+      console.error('Missing conversation_id or message_id for deletion. Message:', message);
+      return;
+    }
+
+    // Corrected: Extract the numeric message_id from the potentially suffixed id
+    const messageIdToDelete = message.id.includes('-ai') ? message.id.split('-ai')[0] : message.id;
+
+    try {
+      const PROJECT_ID = ENV_PROJECT; // Using ENV_PROJECT as project_id
+
+      const url = `${DB_API_BASE}/chat-history/messages?project_id=${PROJECT_ID}`;
+      const payload = {
+        conversation_id: parseInt(message.conversation_id, 10), // Ensure it's an integer
+        message_id: parseInt(messageIdToDelete, 10) // Ensure it's an integer
+      };
+
+      console.log("🚀 Deleting message with payload:", payload);
+
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(`Failed to delete message: ${errorData.message || res.statusText}`);
+      }
+
+      console.log('✅ Message deleted successfully:', payload);
+      // Call the parent's function to remove the message from the UI
+      if (onDeleteMessage) {
+        // Pass the original message.id (which might be X-ai) and conversation_id
+        onDeleteMessage(message.id, message.conversation_id);
+      }
+    } catch (err) {
+      console.error('❌ Delete message error:', err);
+      // Optionally, show a user-friendly error message in the UI
+    }
+  };
+
 
   useEffect(() => {
     const detectTeamsContext = () => {
       const isInTeams = !!(
-        window.parent !== window || 
+        window.parent !== window ||
         window.opener ||
         document.referrer.includes('teams.microsoft.com') ||
         window.location.href.includes('teams.microsoft.com') ||
@@ -140,24 +223,25 @@ const ChatMessage = ({
     }
   };
 
-const cleanHtmlContent = (rawHtml) => {
-  if (!rawHtml) return '';
+  const cleanHtmlContent = (rawHtml) => {
+    if (!rawHtml) return '';
 
-  // Remove outer <html>, <body>, whitespace and add table styling
-  let cleaned = rawHtml
-    .replace(/<\/?(html|body)>/gi, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  
-  // Add styling to tables
-  cleaned = cleaned
-    .replace(/<table>/gi, '<table class="border-collapse border border-gray-300 my-2 w-full">')
-    .replace(/<td>/gi, '<td class="border border-gray-300 px-3 py-2">')
-    .replace(/<th>/gi, '<th class="border border-gray-300 px-3 py-2 bg-gray-50 font-semibold">')
-    .replace(/<tr>/gi, '<tr class="even:bg-gray-50">');
-  
-  return cleaned;
-};
+    // Remove outer <html>, <body>, whitespace and add responsive table styling
+    let cleaned = rawHtml
+      .replace(/<\/?(html|body)>/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    // Add responsive styling to tables with proper overflow handling
+    cleaned = cleaned
+      .replace(/<table>/gi, '<div class="table-container" style="overflow-x: auto; margin: 8px 0;"><table class="border-collapse border border-gray-300 w-full min-w-max" style="border-collapse: collapse; border: 1px solid #d1d5db; width: 100%; min-width: max-content;">')
+      .replace(/<\/table>/gi, '</table></div>')
+      .replace(/<td>/gi, '<td class="border border-gray-300 px-2 py-1 text-sm" style="border: 1px solid #d1d5db; padding: 8px 12px; font-size: 0.875rem; word-wrap: break-word;">')
+      .replace(/<th>/gi, '<th class="border border-gray-300 px-2 py-1 bg-gray-50 font-semibold text-sm" style="border: 1px solid #d1d5db; padding: 8px 12px; background-color: #f9fafb; font-weight: 600; font-size: 0.875rem;">')
+      .replace(/<tr>/gi, '<tr class="even:bg-gray-50" style="background-color: transparent;">');
+
+    return cleaned;
+  };
 
 
   const copyForTeams = async (textContent) => {
@@ -259,7 +343,7 @@ const cleanHtmlContent = (rawHtml) => {
   };
 
   const handleZoomOut = (e) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     setImageZoom(prev => Math.max(prev / 1.2, 0.2));
   };
 
@@ -299,17 +383,17 @@ const cleanHtmlContent = (rawHtml) => {
         imageMatches.forEach((match) => {
           const imageSrc = `/api/images/${match}.jpeg`;
           const imageSize = isTeamsContext ? 'max-width: 280px; max-height: 180px;' : 'max-width: 320px; max-height: 220px;';
-          const imageElement = `<span class="inline-image-container" style="display: inline-block; margin: 4px 6px; vertical-align: top;"></span>
-            <img 
-              src="${imageSrc}" 
-              alt="Reference ${match}" 
+          const imageElement = `<span class="inline-image-container" style="display: inline-block; margin: 4px 6px; vertical-align: top;">
+            <img
+              src="${imageSrc}"
+              alt="Reference ${match}"
               class="inline-image cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105"
-              data-image-src="${imageSrc}" 
+              data-image-src="${imageSrc}"
               data-image-alt="Reference ${match}"
-              style="${imageSize} border-radius: 8px; border: 2px solid #e5e7eb; margin: 4px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+              style="${imageSize} border-radius: 8px; border: 2px solid #e5e7eb; margin: 4px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
               onerror="this.style.display='none'; console.error('Failed to load image:', '${imageSrc}');"
             />
-            <span class="image-reference-label text-xs text-blue-600 font-medium  block">[${match}]</span>
+            <span class="image-reference-label text-xs text-blue-600 font-medium block">[${match}]</span>
           </span>`;
           formattedLine = formattedLine.replace(match, imageElement);
         });
@@ -345,7 +429,7 @@ const cleanHtmlContent = (rawHtml) => {
       <div className={`mb-4 ${getContainerPadding()}`}>
         <div className="flex justify-end">
           <div className={getResponsiveClasses()}>
-            <div className="bg-blue-100 text-gray-800 px-4 py-3 rounded-lg rounded-tr-sm shadow-sm border border-blue-200">
+            <div className="bg-blue-600 text-white px-3 py-2.5 rounded-lg rounded-tr-sm shadow-sm">
               <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                 {message.content}
               </div>
@@ -360,60 +444,90 @@ const cleanHtmlContent = (rawHtml) => {
     <>
       <div className={`mb-4 ${getContainerPadding()}`}>
         <div className={`flex items-start gap-2 sm:gap-3 ${isGenerating ? 'pt-1' : ''}`}>
-          <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-300 flex items-center justify-center mt-0.5">
-            <img src={customBotLogo} alt="Bot" className="w-6 h-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+          <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center mt-0.5">
+            <img src={customBotLogo} alt="Bot" className="w-5 h-5 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
 
           <div className={`flex-1 ${getResponsiveClasses()}`}>
-              {isGenerating ? (
-                <div className="flex items-center gap-2 min-h-[24px] mt-1 ml-1 text-gray-500">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                  <span className="text-sm text-gray-600">Generating</span>
+            {isGenerating ? (
+              <div className="flex items-center gap-2 min-h-[24px] mt-1 ml-1 text-gray-500">
+                <div className="flex space-x-1">
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
-              ) : (
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg rounded-tl-sm p-4 shadow-sm">
-                <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap break-words"
-                  dangerouslySetInnerHTML={{__html: cleanHtmlContent(message.content)}} />
+                <span className="text-xs text-gray-500">Generating...</span>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg rounded-tl-sm p-3 shadow-sm overflow-hidden">
+                <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+                  {/* Use formatContent for images and cleanHtmlContent for tables */}
+                  {message.content.includes('<table') ? (
+                    <div dangerouslySetInnerHTML={{ __html: cleanHtmlContent(message.content) }} />
+                  ) : (
+                    <div onClick={(e) => {
+                      if (e.target.classList.contains('inline-image')) {
+                        handleImageClick(e.target.dataset.imageSrc, e.target.dataset.imageAlt);
+                      }
+                    }}>
+                      {formatContent(message.content)}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {!isGenerating && (
-              <div className={`flex items-center gap-2 mt-3 ${isTeamsContext ? 'flex-wrap' : ''}`}>
-                <button onClick={copyToClipboard} disabled={copyStatus === 'copying'} className={`p-2 rounded-md transition-all duration-200 text-xs font-medium
-                  ${copyStatus === 'copied' ? 'bg-green-50 text-green-700 border border-green-200'
-                  : copyStatus === 'error' ? 'bg-red-50 text-red-700 border border-red-200'
-                  : copyStatus === 'copying' ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-gray-200'}
+              <div className={`flex items-center gap-1 mt-2 ${isTeamsContext ? 'flex-wrap' : ''}`}>
+                <button onClick={copyToClipboard} disabled={copyStatus === 'copying'} className={`p-1.5 rounded-md transition-all duration-200 text-xs font-medium
+                  ${copyStatus === 'copied' ? 'bg-green-100 text-green-700 border border-green-200'
+                    : copyStatus === 'error' ? 'bg-red-100 text-red-700 border border-red-200'
+                      : copyStatus === 'copying' ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent'}
                 `}>
-                  {copyStatus === 'copied' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copyStatus === 'copied' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
 
-                <button className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200" title="Like">
-                  <ThumbsUp className="w-4 h-4" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFeedbackAnchor(e.currentTarget);
+                    setIsFeedbackOpen(true);
+                    handleFeedbackSubmit('', 1); // Like = +1
+                  }}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-200"
+                  title="Like"
+                >
+                  <ThumbsUp className="w-3.5 h-3.5" />
                 </button>
 
-                 <button
-                                ref={thumbsDownRef}
-                                onClick={() => setIsFeedbackOpen(true)}
-                                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200"
-                                title="Dislike"
-                              >
-                                <ThumbsDown className="w-4 h-4" />
-                              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFeedbackAnchor(e.currentTarget);
+                    setIsFeedbackOpen(true);
+                  }}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-gray-200"
+                  title="Dislike"
+                >
+                  <ThumbsDown className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Delete Button */}
+                <button
+                  onClick={handleDeleteMessage}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-100 transition-all duration-200 border border-transparent hover:border-red-200"
+                  title="Delete Message"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+
 
                 {message.references && message.references.length > 0 && (
-                  <button onClick={handleReferencesClick} data-references-button="true" className={`p-2 rounded-md transition-all duration-200 flex items-center gap-1 border
-                    ${isReferencesOpen ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-gray-200'}
+                  <button onClick={handleReferencesClick} data-references-button="true" className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1
+                    ${isReferencesOpen ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200'}
                   `} title={isReferencesOpen ? 'Hide References' : `Show ${message.references.length} References`}>
-                    <FileText className="w-4 h-4" />
-                    {(isTeamsContext || message.references.length > 1) && (
-                      <span className="text-xs font-medium">{message.references.length}</span>
-                    )}
+                    <FileText className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -447,8 +561,7 @@ const cleanHtmlContent = (rawHtml) => {
               style={{
                 transform: `scale(${imageZoom})`,
                 transition: 'transform 0.2s ease-in-out',
-                maxWidth: `${imageDimensions.width}px`,
-                maxHeight: `${imageDimensions.height}px`
+                maxWidth: `${imageDimensions.width}px`
               }}
             />
           </div>
@@ -456,11 +569,10 @@ const cleanHtmlContent = (rawHtml) => {
       )}
       <FeedbackPopover
         isOpen={isFeedbackOpen}
-        anchorRef={thumbsDownRef}
+        anchorRef={{ current: feedbackAnchor }}
         onClose={() => setIsFeedbackOpen(false)}
-        onSubmit={(text) => {
-          console.log("📩 Feedback submitted:", text);
-          // Optional: send to backend
+        onSubmit={(comment) => {
+          handleFeedbackSubmit(comment, -1); // Dislike = -1
         }}
       />
     </>

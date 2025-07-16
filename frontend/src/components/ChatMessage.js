@@ -345,7 +345,7 @@ const cleanHtmlContent = (rawHtml) => {
       <div className={`mb-4 ${getContainerPadding()}`}>
         <div className="flex justify-end">
           <div className={getResponsiveClasses()}>
-            <div className="bg-blue-600 text-white px-3 py-2.5 rounded-lg rounded-tr-sm shadow-sm">
+            <div className="bg-blue-100 text-gray-800 px-4 py-3 rounded-lg rounded-tr-sm shadow-sm border border-blue-200">
               <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                 {message.content}
               </div>
@@ -360,58 +360,57 @@ const cleanHtmlContent = (rawHtml) => {
     <>
       <div className={`mb-4 ${getContainerPadding()}`}>
         <div className={`flex items-start gap-2 sm:gap-3 ${isGenerating ? 'pt-1' : ''}`}>
-          <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center mt-0.5">
-            <img src={customBotLogo} alt="Bot" className="w-5 h-5 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+          <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-300 flex items-center justify-center mt-0.5">
+            <img src={customBotLogo} alt="Bot" className="w-6 h-6 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
 
           <div className={`flex-1 ${getResponsiveClasses()}`}>
               {isGenerating ? (
                 <div className="flex items-center gap-2 min-h-[24px] mt-1 ml-1 text-gray-500">
                   <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
-                  <span className="text-xs text-gray-500">Generating...</span>
+                  <span className="text-sm text-gray-600">Generating</span>
                 </div>
               ) : (
 
-              <div className="bg-white border border-gray-200 rounded-lg rounded-tl-sm p-3 shadow-sm">
-                <div className="text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words"
+              <div className="bg-gray-50 border border-gray-200 rounded-lg rounded-tl-sm p-4 shadow-sm">
+                <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap break-words"
                   dangerouslySetInnerHTML={{__html: cleanHtmlContent(message.content)}} />
               </div>
             )}
 
             {!isGenerating && (
-              <div className={`flex items-center gap-1 mt-2 ${isTeamsContext ? 'flex-wrap' : ''}`}>
-                <button onClick={copyToClipboard} disabled={copyStatus === 'copying'} className={`p-1.5 rounded-md transition-all duration-200 text-xs font-medium
-                  ${copyStatus === 'copied' ? 'bg-green-100 text-green-700 border border-green-200'
-                  : copyStatus === 'error' ? 'bg-red-100 text-red-700 border border-red-200'
-                  : copyStatus === 'copying' ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent'}
+              <div className={`flex items-center gap-2 mt-3 ${isTeamsContext ? 'flex-wrap' : ''}`}>
+                <button onClick={copyToClipboard} disabled={copyStatus === 'copying'} className={`p-2 rounded-md transition-all duration-200 text-xs font-medium
+                  ${copyStatus === 'copied' ? 'bg-green-50 text-green-700 border border-green-200'
+                  : copyStatus === 'error' ? 'bg-red-50 text-red-700 border border-red-200'
+                  : copyStatus === 'copying' ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-gray-200'}
                 `}>
-                  {copyStatus === 'copied' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copyStatus === 'copied' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
 
-                <button className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-gray-200" title="Like">
-                  <ThumbsUp className="w-3.5 h-3.5" />
+                <button className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200" title="Like">
+                  <ThumbsUp className="w-4 h-4" />
                 </button>
 
                  <button
                                 ref={thumbsDownRef}
                                 onClick={() => setIsFeedbackOpen(true)}
-                                className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 border border-transparent hover:border-gray-200"
-              
+                                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all duration-200 border border-gray-200"
                                 title="Dislike"
                               >
-                                <ThumbsDown className="w-3.5 h-3.5" />
+                                <ThumbsDown className="w-4 h-4" />
                               </button>
 
                 {message.references && message.references.length > 0 && (
-                  <button onClick={handleReferencesClick} data-references-button="true" className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1
-                    ${isReferencesOpen ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200'}
+                  <button onClick={handleReferencesClick} data-references-button="true" className={`p-2 rounded-md transition-all duration-200 flex items-center gap-1 border
+                    ${isReferencesOpen ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-gray-200'}
                   `} title={isReferencesOpen ? 'Hide References' : `Show ${message.references.length} References`}>
-                    <FileText className="w-3.5 h-3.5" />
+                    <FileText className="w-4 h-4" />
                     {(isTeamsContext || message.references.length > 1) && (
                       <span className="text-xs font-medium">{message.references.length}</span>
                     )}

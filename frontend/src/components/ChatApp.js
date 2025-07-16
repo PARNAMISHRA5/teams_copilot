@@ -7,6 +7,7 @@ import {
   Sparkles,
   Menu,
   Square,
+  Check,
   Monitor,
   Smartphone,
   Globe,
@@ -27,6 +28,8 @@ const API_BASE = process.env.REACT_APP_API_URL;
 // VERSIONS_AVAILABLE from App1.js (renamed from AI_MODELS)
 // Replace the existing VERSIONS_AVAILABLE array with this:
 // Replace the existing getVersionsFromEnv function with this improved version:
+
+// Replace the existing getVersionsFromEnv function and VERSIONS_AVAILABLE constant with this:
 
 const getVersionsFromEnv = () => {
   const versionsString = process.env.REACT_APP_AVAILABLE_VERSIONS;
@@ -98,6 +101,7 @@ const getVersionsFromEnv = () => {
 };
 const VERSIONS_AVAILABLE = getVersionsFromEnv();
 
+
 // Simplified platform detection from App1.js
 const detectPlatform = () => {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -138,6 +142,11 @@ const detectPlatform = () => {
 
 // Compact Version Selector Component from App1.js (props updated)
 
+// Updated CompactVersionSelector with better mobile integration
+
+
+
+// Fixed CompactVersionSelector component
 const CompactVersionSelector = ({
   selectedProjectVersion,
   onProjectVersionChange,
@@ -145,191 +154,180 @@ const CompactVersionSelector = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [dropdownStyles, setDropdownStyles] = useState({});
   const containerRef = useRef(null);
-  const dropdownRef = useRef(null);
 
+  /* ---------- screen‑size checker ---------- */
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const fn = () => setIsMobile(window.innerWidth <= 768);
+    fn();
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
   }, []);
 
+  /* ---------- disable body scroll when mobile sheet open ---------- */
   useEffect(() => {
-    if (isOpen && !isMobile && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const dropdownHeight = Math.min(240, VERSIONS_AVAILABLE.length * 44 + 60);
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
+    if (isMobile && isOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "unset";
+  }, [isMobile, isOpen]);
 
-      let top;
-      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-        // Open upward
-        top = rect.top + window.scrollY - dropdownHeight - 8;
-      } else {
-        // Open downward
-        top = rect.bottom + window.scrollY + 4;
-      }
-
-      setDropdownStyles({
-        position: 'absolute',
-        top: `${top}px`,
-        left: `${rect.left + window.scrollX}px`,
-        width: `${rect.width}px`,
-        zIndex: 9999,
-        maxHeight: `${Math.min(dropdownHeight, Math.max(spaceBelow, spaceAbove) - 20)}px`,
-      });
-    }
-  }, [isOpen, isMobile]);
-
+  /* ---------- outside click ---------- */
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+    const handler = (e) => {
+      if (!containerRef.current?.contains(e.target)) setIsOpen(false);
     };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isMobile && isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isMobile, isOpen]);
-
-  if (VERSIONS_AVAILABLE.length === 0) return null;
-
-  const selectedVersionData =
-    VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) || VERSIONS_AVAILABLE[0];
-
-  const handleVersionSelect = (versionId) => {
-    onProjectVersionChange(versionId);
+  // FIX 2: Improved choose function with proper callback and immediate state update
+  // MOVED BEFORE EARLY RETURN TO FIX HOOKS ERROR
+  const choose = useCallback((id) => {
+    console.log("Choosing version:", id);
     setIsOpen(false);
-  };
+    
+    // Immediately call the callback function to update parent state
+    if (onProjectVersionChange && typeof onProjectVersionChange === 'function') {
+      console.log("Calling onProjectVersionChange with:", id);
+      onProjectVersionChange(id);
+    } else {
+      console.error("onProjectVersionChange is not a function:", onProjectVersionChange);
+    }
+  }, [onProjectVersionChange]);
 
-  const dropdownContent = (
+  if (!VERSIONS_AVAILABLE.length) return null;
+
+  // FIX 1: Better selected version finding with fallback
+  const selected = VERSIONS_AVAILABLE.find((v) => v.id === selectedProjectVersion) || VERSIONS_AVAILABLE[0];
+  
+  console.log("Selected Version ID:", selectedProjectVersion);
+  console.log("Available IDs:", VERSIONS_AVAILABLE.map(v => v.id));
+  console.log("Selected object:", selected);
+
+  /* ---------- shared option list ---------- */
+  const options = () => (
+    <div className="py-2 overflow-y-auto max-h-[70vh]">
+      {VERSIONS_AVAILABLE.map((v) => (
+        <button
+          key={v.id}
+          onClick={() => choose(v.id)}
+          className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+            selectedProjectVersion === v.id ? "bg-blue-50 text-blue-600" : "text-gray-700"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium truncate">
+              {v.name}
+            </span>
+            {selectedProjectVersion === v.id && (
+              <Check className="w-4 h-4 text-blue-500 shrink-0" />
+            )}
+          </div>
+          {v.description && (
+            <p className="text-xs text-gray-500 mt-0.5 truncate">
+              {v.description}
+            </p>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+
+  /* ---------- desktop popover ---------- */
+  const desktopDropdown = (
     <div
-      ref={dropdownRef}
-      style={dropdownStyles}
-      className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
+      className="absolute z-[9999] w-80 max-h-96 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+      style={{
+        top:
+          (containerRef.current?.getBoundingClientRect().bottom || 0) +
+          window.scrollY +
+          8,
+        left:
+          (containerRef.current?.getBoundingClientRect().left || 0) +
+          window.scrollX,
+      }}
     >
-      <div className="p-2">
-        <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
-          Select Project Version
-        </div>
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(100% - 40px)' }}>
-          {VERSIONS_AVAILABLE.map((version) => (
-            <button
-              key={version.id}
-              onClick={() => handleVersionSelect(version.id)}
-              className={`w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 transition-colors ${
-                selectedProjectVersion === version.id
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-700'
-              }`}
-            >
-              <div className="font-medium text-sm">{version.name}</div>
-            </button>
-          ))}
-        </div>
+      <div className="px-4 py-3 border-b border-gray-100">
+        <h3 className="text-sm font-semibold">Select Project Version</h3>
+      </div>
+      {options()}
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+        <p className="text-xs text-gray-500">
+          Choose the version that best fits your needs
+        </p>
       </div>
     </div>
   );
 
+  /* ---------- mobile bottom sheet ---------- */
+  const mobileSheet = (
+    <div className="fixed inset-x-4 bottom-4 z-[10000] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-in slide-in-from-bottom fade-in">
+      <div className="flex justify-center py-3 border-b border-gray-100">
+        <div className="w-12 h-1 bg-gray-300 rounded-full" />
+      </div>
+      <div className="px-4 py-3 border-b border-gray-100">
+        <h3 className="text-sm font-semibold">Select Project Version</h3>
+      </div>
+      {options()}
+      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="w-full py-3 text-center text-gray-600 font-medium hover:text-gray-800"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ---------- trigger ---------- */
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="relative" ref={containerRef}>
       <button
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        onClick={() => !disabled && setIsOpen((p) => !p)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between gap-1 px-3 py-1 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors ${
-          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-        } ${isOpen ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
-        title={`Current version: ${selectedVersionData.name}`}
+        title={`Current version: ${selected.name}`}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-all border ${
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+        } ${
+          isMobile
+            ? "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+            : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-sm"
+        } ${isOpen ? "ring-2 ring-blue-500/20" : ""}`}
+        style={{ minWidth: "6rem", maxWidth: "9rem" }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <Settings className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          <span className="text-gray-700 font-medium truncate">
-            {selectedVersionData.name}
-          </span>
-        </div>
+        <span className="text-xs font-medium text-left whitespace-nowrap overflow-hidden text-ellipsis max-w-[10rem] sm:max-w-[12rem]">
+          {selected.name || "Select Version"}
+        </span>
+
         <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
-            isOpen ? 'rotate-180' : ''
+          className={`w-3 h-3 transition-transform ${
+            isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {isOpen && (
-        <>
-          {isMobile ? (
-            <>
-              <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
-              <div
-                ref={dropdownRef}
-                className="fixed inset-x-4 bottom-4 top-auto z-50 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
-                style={{ maxHeight: '60vh' }}
-              >
-                <div className="flex justify-center py-2 border-b border-gray-200">
-                  <div className="w-12 h-1 bg-gray-300 rounded-full" />
-                </div>
-                <div className="p-2">
-                  <div className="text-xs font-semibold text-gray-500 px-2 py-1 mb-1">
-                    Select Project Version
-                  </div>
-                  <div className="overflow-y-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
-                    {VERSIONS_AVAILABLE.map((version) => (
-                      <button
-                        key={version.id}
-                        onClick={() => handleVersionSelect(version.id)}
-                        className={`w-full text-left px-3 py-3 rounded-md hover:bg-gray-50 transition-colors ${
-                          selectedProjectVersion === version.id
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">{version.name}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="p-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="w-full py-3 text-center text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            createPortal(dropdownContent, document.body)
-          )}
-        </>
-      )}
+      {/* ----- PORTAL CONTENT ----- */}
+      {isOpen &&
+        createPortal(
+          <>
+            {/* backdrop */}
+            <div
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/50 z-[9998]"
+            />
+            {isMobile ? mobileSheet : desktopDropdown}
+          </>,
+          document.body
+        )}
     </div>
   );
 };
+
 
 function App({ account, logout }) {
   // Merged App and ChatApp signatures
@@ -986,223 +984,199 @@ function App({ account, logout }) {
   );
 
   // Landing page rendering (Combined from both, prioritizing App1.js structure and styling for landing)
-  if (showLanding) {
-    return (
-      <div
-        className={`min-h-screen max-h-screen flex overflow-hidden ${
-          platformInfo.isTeams
-            ? "bg-white"
-            : "bg-gradient-to-br from-slate-50 to-blue-50"
-        }`}
-      >
-        {/* Mobile Hamburger Menu */}
-        {isMobile && (
-          <button
-            data-hamburger-menu
-            onClick={() => handleMobileToggle(true)}
-            className="fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-        )}
-
-
-        {/* Mobile Overlay */}
-        {isMobile && isMobileOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
-        )}
-
-        <ChatSidebar
-          chats={chats}
-          currentChatId={currentChatId}
-          onSelectChat={setCurrentChatId}
-          onNewChat={createNewChat}
-          onDeleteChat={deleteChat}
-          isCollapsed={isMobile ? false : isSidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-          isTeams={platformInfo.isTeams}
-          account={account}
-          logout={logout}
-          isMobileOpen={isMobileOpen}
-          onMobileToggle={handleMobileToggle}
-        />
-
-        <div
-          className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
-            platformInfo.isTeams ? "pt-12" : ""
-          } ${isMobile ? "pt-20" : ""}`}
-        >
-          <div className="w-full max-w-xl mx-auto">
-            <div className="text-center mb-8">
-              {/* Logo */}
-              <div className="inline-flex items-center justify-center mb-4">
-                <img
-                  src={CompanyLogo}
-                  alt="Company Logo"
-                  className="w-16 h-16 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
-                />
-              </div>
-
-              {/* Welcome Message */}
-              <p className="text-gray-600 text-sm sm:text-base px-4">
-                Hello {account?.name || "Guest"}! Welcome to{" "}
-                <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-4 sm:mx-0">
-              <div className="flex items-center gap-2 p-3">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask me anything to get started..."
-                  disabled={isGenerating}
-                  className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
-                  rows={1}
-                  onInput={handleTextareaInput}
-                />
-                <div className="flex items-center gap-2">
-                  <div className="min-w-fit max-w-none">
-                    <CompactVersionSelector
-                      selectedProjectVersion={selectedProjectVersion}
-                      onProjectVersionChange={setSelectedProjectVersion}
-                      disabled={isGenerating}
-                    />
-                  </div>
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
-                      isGenerating
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <Square className="w-3 h-3" />
-                    ) : (
-                      <SendHorizontal className="w-3 h-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center mt-3 px-4 sm:px-0">
-              <p className="text-xs text-gray-400">
-                {isGenerating ? "AI is generating a response..." : ""}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (showLanding) {
-    return (
-      <div
-        className={`min-h-screen max-h-screen flex overflow-hidden ${
-          platformInfo.isTeams
-            ? "bg-white"
-            : "bg-gradient-to-br from-slate-50 to-blue-50"
-        }`}
-      >
-       
-        <ChatSidebar
-          chats={chats}
-          currentChatId={currentChatId}
-          onSelectChat={setCurrentChatId}
-          onNewChat={createNewChat}
-          onDeleteChat={deleteChat}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-          isTeams={platformInfo.isTeams}
-        />
-        <div
-          className={`flex-1 flex flex-col items-center justify-center p-4 overflow-hidden ${
-            platformInfo.isTeams ? "pt-12" : "" // From App1.js
-          }`}
-        >
-          <div className="w-full max-w-xl mx-auto">
-            <div className="text-center mb-8">
-              {/* Logo */}
-              <div className="inline-flex items-center justify-center mb-4">
-                <img
-                  src={CompanyLogo}
-                  alt="Company Logo"
-                  className="w-24 sm:w-32 md:w-40 object-contain mx-auto drop-shadow-md"
-                />
-              </div>
-
-              {/* Welcome Message */}
-              <p className="text-gray-600 text-sm sm:text-base">
-                Hello {account?.name || "Guest"}! Welcome to{" "}
-                <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-              <div className="flex items-center gap-2 p-3">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask me anything to get started..."
-                  disabled={isGenerating}
-                  className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
-                  rows={1}
-                  onInput={handleTextareaInput}
-                />
-              <div className="flex items-center gap-2">
-                {VERSIONS_AVAILABLE.length > 0 && (
-                  <div className="min-w-fit max-w-none">
-                    <CompactVersionSelector
-                      selectedProjectVersion={selectedProjectVersion}
-                      onProjectVersionChange={setSelectedProjectVersion}
-                      disabled={isGenerating}
-                    />
-                  </div>
-                )}
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
-                      isGenerating
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <Square className="w-3 h-3" />
-                    ) : (
-                      <SendHorizontal className="w-3 h-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center mt-3">
-              <p className="text-xs text-gray-400">
-                {isGenerating ? "AI is generating a response..." : ""}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Chat interface rendering (Combined from both)
+if (showLanding) {
   return (
     <div
       className={`min-h-screen max-h-screen flex overflow-hidden ${
-        platformInfo.isTeams ? "bg-white" : "bg-gray-50"
-      } relative`}
+        platformInfo.isTeams
+          ? "bg-white"
+          : "bg-gradient-to-br from-slate-50 to-blue-50"
+      }`}
     >
+      {/* Mobile Header with Hamburger Menu Only */}
+      {isMobile && (
+        <div className="fixed top-4 left-4 z-50">
+          <button
+            data-hamburger-menu
+            onClick={() => handleMobileToggle(true)}
+            className="w-10 h-10 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Overlay */}
+      {isMobile && isMobileOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300" />
+      )}
+
+      <ChatSidebar
+        chats={chats}
+        currentChatId={currentChatId}
+        onSelectChat={setCurrentChatId}
+        onNewChat={createNewChat}
+        onDeleteChat={deleteChat}
+        isCollapsed={isMobile ? false : isSidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        isTeams={platformInfo.isTeams}
+        account={account}
+        logout={logout}
+        isMobileOpen={isMobileOpen}
+        onMobileToggle={handleMobileToggle}
+      />
+
+      <div className="flex-1 flex flex-col justify-between overflow-hidden relative">
+        {isMobile ? (
+  /* ===== MOBILE LANDING ===== */
+  <div className="flex-1 flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+    {/* Logo */}
+    <img
+      src={CompanyLogo}
+      alt="Company Logo"
+      className="w-20 h-20 object-contain mb-6 drop-shadow-md"
+    />
+
+    {/* Greeting */}
+    <p className="text-gray-600 text-base leading-relaxed mb-8">
+      Hello {account?.name || "Guest"}! Welcome to{" "}
+      <span className="font-semibold">AI‑DN {ENV_PROJECT}</span>.
+    </p>
+
+    {/* Input bar */}
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 flex items-center gap-2">
+        {/* Textarea */}
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Ask me anything..."
+          disabled={isGenerating}
+          rows={1}
+          onInput={handleTextareaInput}
+          className="flex-1 resize-none text-sm outline-none placeholder-gray-400 bg-transparent min-h-[20px] max-h-[96px] leading-[1.4]"
+          style={{ overflow: 'hidden' }}
+        />
+
+        {/* Version selector */}
+        <CompactVersionSelector
+          selectedProjectVersion={selectedProjectVersion}
+          onProjectVersionChange={setSelectedProjectVersion}
+          disabled={isGenerating}
+        />
+
+        {/* Send / Stop button */}
+        <button
+          onClick={isGenerating ? stopGeneration : sendMessage}
+          disabled={!isGenerating && !input.trim()}
+          className={`w-8 h-8 flex items-center justify-center rounded-full text-white transition-all ${
+            isGenerating
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          }`}
+        >
+          {isGenerating ? (
+            <Square className="w-4 h-4" />
+          ) : (
+            <SendHorizontal className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+    </div>
+
+    {/* Status */}
+    {isGenerating && (
+      <p className="text-xs text-gray-400 mt-4">
+        AI is generating a response…
+      </p>
+    )}
+  </div>
+) :  (
+          // Desktop version (unchanged)
+          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="w-full max-w-xl mx-auto">
+              <div className="text-center mb-8">
+                {/* Logo */}
+                <div className="inline-flex items-center justify-center mb-4">
+                  <img
+                    src={CompanyLogo}
+                    alt="Company Logo"
+                    className="w-16 h-16 sm:w-24 md:w-32 lg:w-40 object-contain mx-auto drop-shadow-md"
+                  />
+                </div>
+
+                {/* Welcome Message */}
+                <p className="text-gray-600 text-sm sm:text-base px-4">
+                  Hello {account?.name || "Guest"}! Welcome to{" "}
+                  <span className="font-semibold">AI-DN {ENV_PROJECT}</span>.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mx-4 sm:mx-0">
+                <div className="flex items-center gap-2 p-3">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Ask me anything to get started..."
+                    disabled={isGenerating}
+                    className="flex-1 text-sm resize-none border-none outline-none focus:ring-0 min-h-[20px] max-h-12 disabled:opacity-50 bg-transparent placeholder-gray-400"
+                    rows={1}
+                    onInput={handleTextareaInput}
+                  />
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-fit max-w-none">
+                      <CompactVersionSelector
+                        selectedProjectVersion={selectedProjectVersion}
+                        onProjectVersionChange={setSelectedProjectVersion}
+                        disabled={isGenerating}
+                      />
+                    </div>
+                    <button
+                      onClick={isGenerating ? stopGeneration : sendMessage}
+                      disabled={!isGenerating && !input.trim()}
+                      className={`flex items-center justify-center w-7 h-7 text-white rounded-md transition-all duration-200 flex-shrink-0 ${
+                        isGenerating
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      }`}
+                    >
+                      {isGenerating ? (
+                        <Square className="w-3 h-3" />
+                      ) : (
+                        <SendHorizontal className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-3 px-4 sm:px-0">
+                <p className="text-xs text-gray-400">
+                  {isGenerating ? "AI is generating a response..." : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
+  // Chat interface rendering (Combined from both)
+  return (
+<div
+  className={`min-h-screen max-h-screen flex overflow-hidden ${
+    platformInfo.isTeams ? "bg-gray-50" : "bg-white"
+  } relative`}
+>
+
       {/* Mobile Hamburger Menu */}
       {isMobile && (
         <button
@@ -1292,108 +1266,112 @@ function App({ account, logout }) {
           )}
         </div>
 
-        {/* Input area */}
-        <div
-          className={`bg-white border-t border-gray-200 flex-shrink-0 ${
-            platformInfo.isTeams ? "px-2 sm:px-3 py-2" : "px-2 sm:px-4 py-2"
+    
+
+{/* Input area */}
+<div
+  className={`bg-white border-t border-gray-200 flex-shrink-0 ${
+    platformInfo.isTeams ? "px-2 sm:px-3 py-2" : "px-2 sm:px-4 py-2"
+  }`}
+>
+  {/* Changed max-w-3xl to max-w-4xl to match chat messages container */}
+  <div className="w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+
+
+    <div
+      className={`bg-white rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden ${
+        platformInfo.isTeams ? "rounded-md" : ""
+      }`}
+    >
+      <div
+        className={`flex items-center gap-2 ${
+          platformInfo.isTeams ? "p-2" : "p-2.5"
+        }`}
+      >
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Ask me anything..."
+          disabled={isGenerating}
+          className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 placeholder-gray-400 ${
+            platformInfo.isTeams
+              ? "max-h-8 text-xs"
+              : "max-h-16 text-sm"
           }`}
-        >
-          <div className="max-w-3xl mx-auto">
+          rows={1}
+          onInput={handleTextareaInput}
+        />
+        <div className="flex items-center gap-1.5">
+          {VERSIONS_AVAILABLE.length > 0 && (
             <div
-              className={`bg-white rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden ${
-                platformInfo.isTeams ? "rounded-md" : ""
+              className={`${
+                platformInfo.isTeams
+                  ? "max-w-[100px]"
+                  : "max-w-[120px] sm:max-w-[140px]"
               }`}
             >
-              <div
-                className={`flex items-center gap-2 ${
-                  platformInfo.isTeams ? "p-2" : "p-2.5"
-                }`}
-              >
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Ask me anything..."
-                  disabled={isGenerating}
-                  className={`flex-1 bg-transparent resize-none border-none outline-none focus:ring-0 min-h-[20px] disabled:opacity-50 placeholder-gray-400 ${
-                    platformInfo.isTeams
-                      ? "max-h-8 text-xs"
-                      : "max-h-16 text-sm"
-                  }`}
-                  rows={1}
-                  onInput={handleTextareaInput}
-                />
-                <div className="flex items-center gap-1.5">
-                {VERSIONS_AVAILABLE.length > 0 && (
-                    <div
-                      className={`${
-                        platformInfo.isTeams
-                          ? "max-w-[100px]"
-                          : "max-w-[120px] sm:max-w-[140px]"
-                      }`}
-                    >
-                      <CompactVersionSelector
-                        selectedProjectVersion={selectedProjectVersion}
-                        onProjectVersionChange={setSelectedProjectVersion}
-                        disabled={isGenerating}
-                      />
-                    </div>
-                  )}
-                  <button
-                    onClick={isGenerating ? stopGeneration : sendMessage}
-                    disabled={!isGenerating && !input.trim()}
-                    className={`flex items-center justify-center text-white rounded-lg transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md ${
-                      platformInfo.isTeams
-                        ? "w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        : "w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    } ${isGenerating ? "bg-red-500 hover:bg-red-600" : ""}`}
-                  >
-                    {isGenerating ? (
-                      <Square
-                        className={
-                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
-                        }
-                      />
-                    ) : (
-                      <SendHorizontal
-                        className={
-                          platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
-                        }
-                      />
-                    )}
-                  </button>
-                </div>
-              </div>
+              <CompactVersionSelector
+                selectedProjectVersion={selectedProjectVersion}
+                onProjectVersionChange={setSelectedProjectVersion}
+                disabled={isGenerating}
+              />
             </div>
-
-            {/* Compact status indicator */}
-            {/* Status indicators and disclaimer */}
-            <div className="flex items-center justify-center mt-1">
-              {isGenerating ? (
-                <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
-                  <p
-                    className={`text-gray-400 ${
-                      platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
-                    }`}
-                  >
-                    Generating...
-                  </p>
-                </div>
-              ) : (
-                <p
-                  className={`text-gray-400 ${
-                    platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
-                  }`}
-                >
-                  AI can make mistakes. Verify important information.
-                </p>
-              )}
-            </div>
-          </div>
+          )}
+          <button
+            onClick={isGenerating ? stopGeneration : sendMessage}
+            disabled={!isGenerating && !input.trim()}
+            className={`flex items-center justify-center text-white rounded-lg transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md ${
+              platformInfo.isTeams
+                ? "w-6 h-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                : "w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            } ${isGenerating ? "bg-red-500 hover:bg-red-600" : ""}`}
+          >
+            {isGenerating ? (
+              <Square
+                className={
+                  platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                }
+              />
+            ) : (
+              <SendHorizontal
+                className={
+                  platformInfo.isTeams ? "w-3 h-3" : "w-3.5 h-3.5"
+                }
+              />
+            )}
+          </button>
         </div>
       </div>
+    </div>
+
+    {/* Status indicators and disclaimer */}
+    <div className="flex items-center justify-center mt-1">
+      {isGenerating ? (
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+          <p
+            className={`text-gray-400 ${
+              platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+            }`}
+          >
+            Generating...
+          </p>
+        </div>
+      ) : (
+        <p
+          className={`text-gray-400 ${
+            platformInfo.isTeams ? "text-[9px]" : "text-[10px]"
+          }`}
+        >
+          AI can make mistakes. Verify important information.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
+</div>
 
       <div ref={referencePanelRef} className="hidden lg:block">
         <ReferencesPanel

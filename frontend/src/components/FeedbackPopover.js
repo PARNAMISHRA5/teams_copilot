@@ -5,35 +5,42 @@ const FeedbackPopover = ({ isOpen, anchorRef, onClose, onSubmit }) => {
   const [feedback, setFeedback] = useState('');
   const popoverRef = useRef(null);
 
-  // Auto-close on outside click
+  // Close popover when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
+    const handleOutsideClick = (event) => {
       if (
         popoverRef.current &&
-        !popoverRef.current.contains(e.target) &&
-        !anchorRef?.current?.contains(e.target)
+        !popoverRef.current.contains(event.target) &&
+        !anchorRef?.current?.contains(event.target)
       ) {
         onClose();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [onClose, anchorRef]);
 
   if (!isOpen || !anchorRef?.current) return null;
 
-  const anchorRect = anchorRef.current.getBoundingClientRect();
-  const style = {
+  const { top, left } = anchorRef.current.getBoundingClientRect();
+  const popoverStyle = {
     position: 'absolute',
-    top: anchorRect.top - 160, // Adjust height
-    left: anchorRect.left - 150, // Adjust width position
-    zIndex: 9999
+    top: top - 160,
+    left: left - 150,
+    zIndex: 9999,
+  };
+
+  const handleSubmit = () => {
+    onSubmit(feedback);
+    setFeedback('');
+    onClose();
   };
 
   return (
     <div
       ref={popoverRef}
-      style={style}
+      style={popoverStyle}
       className="bg-white border border-gray-200 shadow-xl rounded-lg w-72 p-4"
     >
       <div className="flex justify-between items-center mb-2">
@@ -52,12 +59,8 @@ const FeedbackPopover = ({ isOpen, anchorRef, onClose, onSubmit }) => {
       />
 
       <button
-        onClick={() => {
-          onSubmit(feedback);
-          setFeedback('');
-          onClose();
-        }}
-        disabled={!feedback.trim()}
+        onClick={handleSubmit}
+        // disabled={!feedback.trim()}
         className="mt-3 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded disabled:opacity-50"
       >
         Submit

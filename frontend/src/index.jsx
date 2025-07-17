@@ -16,7 +16,7 @@ const msalInstance = new PublicClientApplication({
     storeAuthStateInCookie: false,
   },
 });
-
+await msalInstance.initialize();
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <MsalProvider instance={msalInstance}>
